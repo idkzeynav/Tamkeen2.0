@@ -1,0 +1,14 @@
+/* Add the Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles using @layer */
+@layer components {
+  .react-calendar {
+    width: 800px !important;
+    height: 600px;
+  }
+
+  
+}

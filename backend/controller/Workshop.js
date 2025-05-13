@@ -29,18 +29,48 @@ function getVideoId(url) {
   // Handle different YouTube URL formats
   const patterns = [
     /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/,
+    // Embed URLs
     /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^?]+)/,
-    /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^?]+)/
+    // Short URLs
+    /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^?]+)/,
+    // Share URLs with additional parameters
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?.*v=([^&]+)/,
+    // Mobile share URLs 
+    /(?:https?:\/\/)?(?:m\.)?youtube\.com\/watch\?v=([^&]+)/,
+    // Share URLs that include other query parameters first
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?(.*&)?v=([^&]+)/,
+    // YouTube short URLs (youtu.be) with additional parameters
+    /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^?]+)\?/
   ];
 
   for (const pattern of patterns) {
     const match = url.match(pattern);
-    if (match) return match[1];
+    if (match) {
+      // The last captured group is the video ID
+      const groupIndex = pattern.toString().includes(".*&)?v=") ? 2 : 1;
+      return match[groupIndex];
+    }
   }
-  
-  return null;
+    // If no recognized format, try extracting the video ID from a YouTube URL
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+        // Try to extract from query parameters
+        if (urlObj.searchParams.has('v')) {
+          return urlObj.searchParams.get('v');
+        }
+        
+        // Try to extract from path (for youtu.be URLs)
+        if (urlObj.hostname.includes('youtu.be')) {
+          const path = urlObj.pathname.split('/');
+          return path[path.length - 1];
+        }
+      }
+    } catch (error) {
+      // If URL parsing fails, continue with the fallback
+    }
+    
 }
-
 /**
  * Calculates overall progress from video progress map
  * @param {Map|Object} videoProgress - Progress of individual videos
@@ -86,19 +116,10 @@ const initiateCertificateGeneration = async (userId, workshopId) => {
     console.error("Certificate generation failed:", err);
   }
 };
-
-/**
- * Retrieves quiz for a workshop
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- */
+// Define getWorkshopQuiz controller function
 const getWorkshopQuiz = catchAsyncErrors(async (req, res, next) => {
   try {
     const quiz = await Quiz.findOne({ workshopId: req.params.id });
-    console.log("Quiz found:", quiz);
-    console.log("User ID:", req.user._id);
-    
     if (!quiz) {
       return next(new ErrorHandler("Quiz not found", 404));
     }
@@ -111,6 +132,15 @@ const getWorkshopQuiz = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler(err.message, 500));
   }
 });
+
+
+/**
+ * Retrieves quiz for a workshop
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+
 
 //======================================================================
 // WORKSHOP MANAGEMENT ROUTES (ADMIN)
@@ -174,42 +204,7 @@ router.post(
 );
 
 /**
- * Update an existing workshop
- * PUT /update-workshop/:id
- */
-router.put(
-  "/update-workshop/:id",
-  isAuthenticated,
-  isAdmin("Admin"),
-  catchAsyncErrors(async (req, res, next) => {
-    try {
-      const { name, category, description, youtubeUrl, duration, requirements, level, thumbnail } = req.body;
 
-      const workshop = await Workshop.findById(req.params.id);
-      if (!workshop) {
-        return next(new ErrorHandler("Workshop not found", 404));
-      }
-
-      workshop.name = name || workshop.name;
-      workshop.category = category || workshop.category;
-      workshop.description = description || workshop.description;
-      workshop.youtubeUrl = youtubeUrl || workshop.youtubeUrl;
-      workshop.duration = duration || workshop.duration;
-      workshop.requirements = requirements || workshop.requirements;
-      workshop.level = level || workshop.level;
-      workshop.thumbnail = thumbnail || workshop.thumbnail;
-
-      await workshop.save();
-
-      res.status(200).json({
-        success: true,
-        workshop,
-      });
-    } catch (err) {
-      return next(new ErrorHandler(err.message, 500));
-    }
-  })
-);
 
 /**
  * Delete a workshop
@@ -290,6 +285,67 @@ router.get("/workshop/:id", catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler(err.message, 500));
   }
 }));
+// Add new quiz routes
+router.get(
+  "/workshop/:workshopId/quiz",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const quiz = await Quiz.findOne({ workshopId: req.params.workshopId });
+      if (!quiz) {
+        return next(new ErrorHandler("Quiz not found", 404));
+      }
+      res.status(200).json({
+        success: true,
+        quiz,
+      });
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  })
+);
+
+
+router.get(
+  "/:workshopId/quiz",
+  isAuthenticated,
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { workshopId } = req.params;
+      const userId = req.user._id;
+
+      // Check if already passed
+      const passedAttempt = await QuizAttempt.findOne({
+        userId,
+        workshopId,
+        passed: true
+      });
+
+      if (passedAttempt) {
+        const quiz = await Quiz.findOne({ workshopId });
+        return res.status(200).json({
+          success: true,
+          quiz,
+          alreadyPassed: true
+        });
+      }
+
+      // Return quiz
+      const quiz = await Quiz.findOne({ workshopId });
+      if (!quiz) {
+        return next(new ErrorHandler("Quiz not found", 404));
+      }
+
+      res.status(200).json({
+        success: true,
+        quiz
+      });
+
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+// Enhanced quiz endpoint
 
 //======================================================================
 // USER PROGRESS TRACKING ROUTES

@@ -13,6 +13,8 @@ import { server } from "../../../server";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import {Link } from "react-router-dom";
+import { BsShieldExclamation} from 'react-icons/bs';
+
 
 const AdminSideBar = ({ active }) => {
 const navigate = useNavigate();
@@ -170,6 +172,20 @@ const navigate = useNavigate();
                 className={`${active === 7 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
               />
               <span className="hidden md:block text-lg font-medium">Logout</span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/admin-flagged-posts"
+              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
+                active === 10 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
+              }`}
+            >
+              <BsShieldExclamation
+                size={24}
+                className={`${active === 10 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+              />
+              <span className="hidden md:block text-lg font-medium">Flagged Posts</span>
             </Link>
           </li>
         </ul>

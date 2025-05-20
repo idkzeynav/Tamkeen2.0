@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { server } from '../../server';
-import Footer from '../Layout/Footer'
-const words = ["Create", "Learn", "Grow", "Inspire", "Master"];
+import Footer from '../Layout/Footer';
+import Header from '../Layout/Header';
 
 const UserWorkshopView = () => {
   const navigate = useNavigate();
@@ -16,7 +16,6 @@ const UserWorkshopView = () => {
   const [level, setLevel] = useState('');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(true);
-  const [wordIndex, setWordIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const workshopsRef = useRef(null); // Reference for workshops section
@@ -32,13 +31,6 @@ const UserWorkshopView = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWordIndex((prev) => (prev + 1) % words.length);
-    }, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   // Fetch all workshops only once
@@ -116,76 +108,53 @@ const UserWorkshopView = () => {
     return '';
   };
 
-  // Hero section component with slower animations
-  const Hero = () => (
-    <div className="relative h-[70vh] mb-12" style={{
-      backgroundColor: '#d8c4b8',
-      backgroundImage: 'radial-gradient(circle at 50% 50%, #c8a4a5 0%, transparent 75%)'
-    }}>
-      <button 
-        onClick={() => navigate(-1)}
-        className="absolute top-4 left-4 z-10 flex items-center gap-2 text-[#5a4336] hover:text-[#a67d6d] transition-colors duration-300"
-      >
-        <ChevronLeft size={24} />
-        <span>Back</span>
-      </button>
+  // Simple header section with navigation without animation
+  const SimpleHeader = () => (
+    <div className="relative py-6 mb-8 bg-[#f7f1f1]">
+      <Header />
+      
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center">
+          <button 
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-[#5a4336] hover:text-[#a67d6d] transition-colors duration-300"
+          >
+     
+            
+          </button>
 
-      {/* Menu Button */}
-      <div className="absolute top-4 right-4 z-20" ref={menuRef}>
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-white/90 hover:bg-white transition-colors duration-300 shadow-md hover:shadow-lg"
-        >
-          <Menu className="w-5 h-5 text-[#5a4336]" />
-        </button>
-
-        {/* Dropdown Menu */}
-        {isMenuOpen && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border-2 border-[#d8c4b8] overflow-hidden">
-            <div 
-              className="flex items-center gap-2 px-4 py-3 text-[#5a4336] hover:bg-[#d8c4b8]/20 cursor-pointer"
-              onClick={() => {
-                navigate('/Userworkshops');
-                setIsMenuOpen(false);
-              }}
+          {/* Menu Button */}
+          <div className="relative z-20" ref={menuRef}>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/90 hover:bg-white transition-colors duration-300 shadow-md hover:shadow-lg"
             >
-              <BookOpen className="w-4 h-4" />
-              <span>Your Workshops</span>
-            </div>
+              <Menu className="w-5 h-5 text-[#5a4336]" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border-2 border-[#d8c4b8] overflow-hidden">
+                <div 
+                  className="flex items-center gap-2 px-4 py-3 text-[#5a4336] hover:bg-[#d8c4b8]/20 cursor-pointer"
+                  onClick={() => {
+                    navigate('/Userworkshops');
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Your Workshops</span>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-
-      <div className="absolute inset-0 bg-black/10" />
-      <div className="relative h-full flex items-center justify-center text-[#5a4336]">
-        <div className="text-center space-y-8">
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-6xl md:text-7xl font-bold"
-          >
-            Time to{' '}
-            <motion.span
-              key={words[wordIndex]}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -30 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="inline-block"
-              style={{ color: '#5a4336' }}
-            >
-              {words[wordIndex]}
-            </motion.span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-            className="text-xl md:text-2xl max-w-2xl mx-auto"
-          >
+        </div>
+        
+        <div className="text-center mt-8 mb-4">
+          <h1 className="text-4xl font-bold text-[#5a4336]">Workshop Gallery</h1>
+          <p className="text-xl text-[#5a4336] mt-2">
             Discover workshops that inspire creativity and fuel your passion for learning
-          </motion.p>
+          </p>
         </div>
       </div>
     </div>
@@ -193,7 +162,7 @@ const UserWorkshopView = () => {
 
   return (
     <div className="min-h-screen bg-[#f7f1f1]">
-      <Hero />
+      <SimpleHeader />
       
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md py-4 shadow-md mb-8">
         <div className="max-w-7xl mx-auto px-4">

@@ -1,21 +1,35 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getUserProcessingOrders } from "../../redux/actions/bulkOrderActions";
 import Loader from "../Layout/Loader";
 import { FaBox, FaShippingFast, FaCheckCircle, FaShoppingCart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import ProfilePage from "../../pages/ProfilePage";
+
 const ProcessingOrdersPage = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
-  const { processingOrders, isLoading, error } = useSelector((state) => state.bulkOrderReducer);
+  const { processingOrders, isLoading } = useSelector((state) => state.bulkOrderReducer);
+  const [localError, setLocalError] = useState(null);
   const navigate = useNavigate(); 
+
   useEffect(() => {
     if (user) {
-      dispatch(getUserProcessingOrders(user._id)).then((response) =>
-        console.log("Processing Orders Response:", response)
-      );
+      dispatch(getUserProcessingOrders(user._id))
+        .then((response) => {
+          if (!response || !response.success) {
+            // Handle the case when no orders are found without affecting other parts of the state
+            console.log("No processing orders found");
+            setLocalError("No processing orders found at this time.");
+          }
+        })
+        .catch((error) => {
+          // Handle any actual errors
+          console.error("Error fetching orders:", error);
+          setLocalError("Error fetching your orders. Please try again later.");
+        });
     }
+    
+    // No need to clear errors on unmount since clearErrors is not available
   }, [dispatch, user]);
 
   const getStatusStep = (status) => {
@@ -52,7 +66,6 @@ const ProcessingOrdersPage = () => {
   };
 
   if (isLoading) return <Loader />;
-  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="bg-gray-100 min-h-screen p-8">
@@ -162,7 +175,7 @@ const ProcessingOrdersPage = () => {
                 <div className="flex justify-end">
                   <button
                     className="bg-[#5a4336] text-white px-6 py-2 rounded-lg shadow-md hover:bg-[#a67d6d] transition duration-300"
-                    onClick={() => navigate(`/FinalBulkorder/details/${order.bulkOrder?._id}`)} // Navigate to the details page
+                    onClick={() => navigate(`/FinalBulkorder/details/${order.bulkOrder?._id}`)}
                   >
                     View Details →
                   </button>
@@ -172,7 +185,23 @@ const ProcessingOrdersPage = () => {
           })}
         </div>
       ) : (
-        <p className="text-gray-600 text-center mt-12">No processing orders found.</p>
+        <div className="text-center py-10">
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-lg mx-auto">
+            <FaBox className="text-5xl text-[#c8a4a5] mx-auto mb-4" />
+            <p className="text-gray-600 text-xl mb-4">
+              {localError || "No processing orders found."}
+            </p>
+            <p className="text-gray-500 mb-6">
+              When you place and confirm a bulk order, it will appear here.
+            </p>
+            <button
+              onClick={() => navigate('/create-bulk-order')}
+              className="bg-[#5a4336] text-white px-6 py-3 rounded-lg shadow-md hover:bg-[#a67d6d] transition duration-300"
+            >
+              Create a Bulk Order
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

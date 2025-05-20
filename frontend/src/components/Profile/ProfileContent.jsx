@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Lock } from 'lucide-react';
 import UserBulkOrders from '../Procurement/getUserBulkOrders';
 import ProcessingOrdersPage from '../Procurement/Processing';
-
+import UserInbox from '../../pages/UserInbox.jsx';
 import UserBookingsPage from '../Booking/Bookingpage';
 import {
     deleteUserAddress,
@@ -94,6 +94,7 @@ const ProfileContent = ({ active }) => {
     const [phoneNumber, setPhoneNumber] = useState(user && user.phoneNumber);
     const [password, setPassword] = useState("");
     const [avatar, setAvatar] = useState(null);
+  const [phoneError, setPhoneError] = useState("");
 
     const dispatch = useDispatch();
 
@@ -107,6 +108,23 @@ const ProfileContent = ({ active }) => {
             dispatch({ type: "clearMessages" });
         }
     }, [error, successMessage]);
+ const validatePhone = (phone) => {
+  const phoneRegex = /^03\d{9}$/; // Must start with 03 and have 11 digits total
+  if (!phone) return true; // Allow empty phone
+  if (!phoneRegex.test(phone)) {
+    setPhoneError("Please enter a valid Pakistani phone number (e.g., 03XXXXXXXXX)");
+    return false;
+  }
+  setPhoneError("");
+  return true;
+};
+
+
+  const handlePhoneChange = (e) => {
+    const value = e.target.value.replace(/\D/g, "").slice(0, 11); // Only allow digits and max 10
+    setPhoneNumber(value);
+    validatePhone(value);
+  };
 
 
     const handleSubmit = (e) => {
@@ -139,114 +157,114 @@ const ProfileContent = ({ active }) => {
             });
     };
 
-      return (
-        <div className="w-full">
-            {active === 1 && (
-                <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-                            {/* Decorative header with modern gradient */}
-                            <div className="h-48 bg-gradient-to-r from-[#e6d8d8] via-[#c8a4a5] to-[#5a4336] relative overflow-hidden">
-                                <div className="absolute inset-0 bg-grid-white/10" />
-                                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/50" />
-                            </div>
-                            
-                            <div className="px-6 sm:px-8 lg:px-12 pb-12 relative">
-                                {/* Profile section with glassmorphism */}
-                                <div className="sm:flex sm:items-end sm:justify-between sm:-mt-24 relative z-10">
-                                    <div className="relative group">
-                                        <div className="w-40 h-40 rounded-2xl overflow-hidden border-4 border-white shadow-2xl transform -rotate-3 transition-transform group-hover:rotate-0 duration-300">
-                                            <img
-                                                src={`${backend_url}${user?.avatar}`}
-                                                alt="Profile"
-                                                className="w-full h-full object-cover transform scale-105"
-                                            />
-                                        </div>
-                                        <label 
-                                            htmlFor="avatar-upload" 
-                                            className="absolute -bottom-2 -right-2 bg-white/90 p-3 rounded-xl cursor-pointer shadow-lg hover:bg-[#5a4336] hover:text-white transition-all duration-300 group-hover:scale-110"
-                                        >
-                                            <AiOutlineCamera className="w-5 h-5" />
-                                            <input
-                                                type="file"
-                                                id="avatar-upload"
-                                                onChange={handleImage}
-                                                className="hidden"
-                                                accept="image/*"
-                                            />
-                                        </label>
-                                    </div>
+      
+  return (
+    <div className="w-full">
+      {active === 1 && (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-6">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl overflow-hidden border border-white/20">
+              {/* Compact header with gradient */}
+              <div className="h-32 bg-gradient-to-r from-[#e6d8d8] via-[#c8a4a5] to-[#5a4336] relative overflow-hidden">
+                <div className="absolute inset-0 bg-grid-white/10" />
+              </div>
+              
+              <div className="px-6 py-6 relative">
+                {/* Compact profile section */}
+                <div className="sm:flex sm:items-center sm:gap-6 sm:-mt-16 relative z-10">
+                  <div className="relative group">
+                    <div className="w-28 h-28 rounded-xl overflow-hidden border-4 border-white shadow-xl transform -rotate-2 transition-transform group-hover:rotate-0 duration-300">
+                      <img
+                        src={`${backend_url}${user?.avatar}`}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <label 
+                      htmlFor="avatar-upload" 
+                      className="absolute -bottom-2 -right-2 bg-white/90 p-2 rounded-xl cursor-pointer shadow-lg hover:bg-[#5a4336] hover:text-white transition-all duration-300"
+                    >
+                      <AiOutlineCamera className="w-4 h-4" />
+                      <input
+                        type="file"
+                        id="avatar-upload"
+                        onChange={handleImage}
+                        className="hidden"
+                        accept="image/*"
+                      />
+                    </label>
+                  </div>
 
-                                    <div className="mt-8 sm:mt-0 text-center sm:text-left">
-                                        <h1 className="text-3xl font-bold text-gray-900 mb-1">{user?.name}</h1>
-                                        <p className="text-lg text-gray-600">{user?.email}</p>
-                                    </div>
-                                </div>
+                  <div className="mt-4 sm:mt-0 text-center sm:text-left">
+                    <h1 className="text-2xl font-bold text-gray-900">{user?.name}</h1>
+                    <p className="text-gray-600">{user?.email}</p>
+                  </div>
+                </div>
 
-                                {/* Modern form with neumorphic elements */}
-                                <form onSubmit={handleSubmit} className="mt-12 space-y-8">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                        <div className="col-span-2">
-                                            <label className="block text-sm font-medium text-gray-600 mb-2">Full Name</label>
-                                            <input
-                                                type="text"
-                                                value={name}
-                                                onChange={(e) => setName(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition duration-200 ease-in-out hover:bg-white"
-                                            />
-                                        </div>
+                {/* Compact form */}
+                <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition"
+                      />
+                    </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-600 mb-2">Email Address</label>
-                                            <input
-                                                type="email"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition duration-200 ease-in-out hover:bg-white"
-                                            />
-                                        </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Email Address</label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition"
+                      />
+                    </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-600 mb-2">Phone Number</label>
-                                            <input
-                                                type="tel"
-                                                value={phoneNumber}
-                                                onChange={(e) => setPhoneNumber(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition duration-200 ease-in-out hover:bg-white"
-                                            />
-                                        </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
+                      <input
+                        type="text"
+                        value={phoneNumber}
+                        onChange={handlePhoneChange}
+                        placeholder="10-digit number"
+                        className="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition"
+                      />
+                      {phoneError && (
+                        <p className="text-red-500 text-xs mt-1">{phoneError}</p>
+                      )}
+                    </div>
 
-                                        <div className="col-span-2">
-                                            <label className="block text-sm font-medium text-gray-600 mb-2">Password</label>
-                                            <input
-                                                type="password"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                placeholder="Enter your password to update your profile"
-                                                className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition duration-200 ease-in-out hover:bg-white"
-                                              
-                                            />
-                       <p className="mt-1 text-xs text-gray-500">
-                    Your password is required to save these changes
-                  </p>
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-sm font-medium text-gray-600 mb-1">Password</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter password to save changes"
+                        className="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Required to save changes</p>
                     </div>
                   </div>
-                                    <div className="flex justify-end pt-4">
-                                        <button
-                                            type="submit"
-                                            className="px-8 py-4 bg-gradient-to-r from-[#5a4336] to-[#a67d6d] text-white text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#c8a4a5]"
-                                        >
-                                            Update Profile
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-    
-
+                  
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      className="px-6 py-2 bg-gradient-to-r from-[#5a4336] to-[#a67d6d] text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-2"
+                    >
+                      Update Profile
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
             {/* Odder  */}
             {
@@ -257,7 +275,12 @@ const ProfileContent = ({ active }) => {
                 )
             }
 
-        
+           {active === 4 && (
+  <div>
+    
+    <UserInbox />
+  </div>
+)}
 
             {/* Track order */}
             {active === 5 && (
@@ -331,7 +354,7 @@ const getStatusColor = (status) => {
     ];
     const currentStep = steps.findIndex(step => step.name === status);
   
-    return (
+   return (
         <div className={orderStyles.timeline}>
           <div className={orderStyles.timelineLine}></div>
           {steps.map((step, index) => (
@@ -352,6 +375,7 @@ const getStatusColor = (status) => {
       );
     };
 
+   
     const OrderCard = ({ order }) => (
       <div className={orderStyles.orderCard}>
         <div className={orderStyles.orderHeader}>
@@ -442,43 +466,55 @@ const getStatusColor = (status) => {
           </div>
         );
       };
-
       export const AllOrders = () => {
-        const { user } = useSelector((state) => state.user);
-        const { orders } = useSelector((state) => state.order);
-        const [selectedOrder, setSelectedOrder] = useState(null);
-        const dispatch = useDispatch();
-      
-        useEffect(() => {
-          dispatch(getAllOrdersOfUser(user._id));
-        }, [dispatch, user._id]);
-      
-        return (
-          <div className={orderStyles.container}>
-            <h2 className={orderStyles.title}>Your Orders</h2>
-            {selectedOrder ? (
-              <>
-                <Button onClick={() => setSelectedOrder(null)} className={orderStyles.actionButton}>
-                  Back to All Orders
-                </Button>
-                <OrderDetails order={selectedOrder} />
-              </>
-            ) : (
-              <div className={orderStyles.orderList}>
-                {orders && orders.map((order) => (
-                  <OrderCard 
-                    key={order._id} 
-                    order={order}
-                    onClick={() => setSelectedOrder(order)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      };
+  const { user } = useSelector((state) => state.user);
+  const { orders } = useSelector((state) => state.order);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const dispatch = useDispatch();
   
+  // Filter for only delivered orders
+  const deliveredOrders = orders ? orders.filter(order => order.status === "Delivered") : [];
 
+  useEffect(() => {
+    dispatch(getAllOrdersOfUser(user._id));
+  }, [dispatch, user._id]);
+
+  return (
+    <div className={orderStyles.container}>
+      <h2 className={orderStyles.title}>Order History</h2>
+      {selectedOrder ? (
+        <>
+          <Button onClick={() => setSelectedOrder(null)} className={orderStyles.actionButton}>
+            Back to Order History
+          </Button>
+          <OrderDetails order={selectedOrder} />
+        </>
+      ) : (
+        <>
+          {deliveredOrders.length > 0 ? (
+            <div className={orderStyles.orderList}>
+              {deliveredOrders.map((order) => (
+                <OrderCard 
+                  key={order._id} 
+                  order={order}
+                  onClick={() => setSelectedOrder(order)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-md">
+              <AlertCircle className="w-16 h-16 text-[#c8a4a5] mb-4" />
+              <h3 className="text-xl font-medium text-[#5a4336] mb-2">No Delivered Orders Yet</h3>
+              <p className="text-gray-600 text-center max-w-md">
+                You don't have any delivered orders in your history. When your orders are delivered, they will appear here.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 export const TrackOrder = () => {
     const { user } = useSelector((state) => state.user);

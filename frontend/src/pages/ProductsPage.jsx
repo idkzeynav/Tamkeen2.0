@@ -22,7 +22,19 @@ const ProductsPage = () => {
     let filteredData = allProducts;
 
     if (categoryData) {
-      filteredData = filteredData?.filter((i) => i.category === categoryData);
+      // Make case-insensitive comparison
+      filteredData = filteredData?.filter((product) => {
+        // Handle both cases where category might be stored differently
+        const productCategory = product.category?.toLowerCase() || "";
+        return productCategory === categoryData.toLowerCase();
+      });
+      
+      // Debug log to help identify category issues
+      console.log("Category filter:", {
+        requestedCategory: categoryData,
+        availableCategories: [...new Set(allProducts?.map(p => p.category))],
+        filteredCount: filteredData?.length
+      });
     }
 
     if (priceRange.min !== 0 || priceRange.max !== Infinity) {
@@ -42,6 +54,12 @@ const ProductsPage = () => {
       ...prev,
       [name]: value === "" ? (name === "max" ? Infinity : 0) : parseFloat(value),
     }));
+  };
+
+  // Function to handle category selection
+  const handleCategoryClick = (categoryTitle) => {
+    navigate(`/products?category=${encodeURIComponent(categoryTitle)}`);
+    setShowCategories(false); // Hide categories after selection
   };
 
   // Close filter when clicking outside
@@ -131,9 +149,9 @@ const ProductsPage = () => {
               {categoriesData.map((category) => (
                 <button
                   key={category.id}
-                  onClick={() => navigate(`/products?category=${category.title}`)}
+                  onClick={() => handleCategoryClick(category.title)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all
-                    ${categoryData === category.title 
+                    ${categoryData?.toLowerCase() === category.title.toLowerCase()
                       ? "bg-gradient-to-r from-[#c8a4a5] to-[#8c6c6b] text-white"
                       : "bg-[#f7f1f1] hover:bg-gradient-to-r hover:from-[#c8a4a5] hover:to-[#8c6c6b] hover:text-white text-[#5a4336]"
                     }`}
@@ -222,8 +240,27 @@ const ProductsPage = () => {
                   />
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t">
-              
+
+              {/* Category Selection in Sidebar */}
+              <div className="mt-8">
+                <h3 className="text-sm font-medium text-[#5a4336] mb-4">Categories</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => navigate("/products")}
+                    className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${!categoryData ? "bg-[#f7f1f1] font-medium" : "hover:bg-[#f7f1f1]"}`}
+                  >
+                    All Products
+                  </button>
+                  {categoriesData.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => handleCategoryClick(category.title)}
+                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${categoryData?.toLowerCase() === category.title.toLowerCase() ? "bg-[#f7f1f1] font-medium" : "hover:bg-[#f7f1f1]"}`}
+                    >
+                      {category.title}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { server } from '../server';
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 import Loader from '../components/Layout/Loader';
+import HateSpeechAlert from '../components/HateSpeechAlert/HateSpeechAlert';
 import { AiOutlineArrowUp, AiOutlineArrowDown, AiOutlineFire, AiOutlineClockCircle } from 'react-icons/ai';
-import { BsPersonCheckFill } from 'react-icons/bs';
+import { BsPersonCheckFill, BsFlag, BsShieldExclamation } from 'react-icons/bs';
 import { useSelector } from 'react-redux';
+import { toast } from 'react-hot-toast';
 
 // Updated Color Scheme
 const colors = {
@@ -17,16 +19,25 @@ const colors = {
   light: '#faf7f7', // Very light background
   white: '#ffffff', // Pure white
   dark: '#5a4336', // Dark brown for text
+  warning: '#f59e0b', // Warning color for flag
+  danger: '#ef4444', // Error color for hate speech alerts
 };
 
 const ForumPage = () => {
   const [posts, setPosts] = useState([]);
+   const [post, setPost] = useState(null);
   const [topContributors, setTopContributors] = useState([]);
   const [topHelpers, setTopHelpers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('latest');
-  const [userVotes, setUserVotes] = useState({}); // Track user votes
+  const [userVotes, setUserVotes] = useState({});
+  const [flagModalOpen, setFlagModalOpen] = useState(false);
+  const [flagReason, setFlagReason] = useState('');
+  const [flaggedPostId, setFlaggedPostId] = useState(null);
+  const [hateSpeechError, setHateSpeechError] = useState(false);
+  const [hateSpeechMessage, setHateSpeechMessage] = useState('');
+  const [isSubmittingFlag, setIsSubmittingFlag] = useState(false);
   const navigate = useNavigate();
 
   const { user } = useSelector((state) => state.user);
@@ -91,6 +102,7 @@ const ForumPage = () => {
   }, []);
 
   const handleCreatePostClick = () => {
+    setHateSpeechError(false);
     navigate('/forum/create-post');
   };
 
@@ -134,6 +146,64 @@ const ForumPage = () => {
       setError('Failed to vote.');
     }
   };
+
+  const handleFlagPost = (postId, e) => {
+    e.stopPropagation();
+    if (!user) {
+      toast.error('You must be logged in to flag a post');
+      return;
+    }
+    setFlaggedPostId(postId);
+    setFlagModalOpen(true);
+  // Reset flag reason when opening modal
+  };
+
+  const closeFlagModal = () => {
+    setFlagModalOpen(false);
+    setFlagReason('');
+    setFlaggedPostId(null);
+    setIsSubmittingFlag(false);
+  };
+
+    const submitFlag = async () => {
+  if (!flagReason.trim()) {
+    toast.error('Please provide a reason for flagging this post');
+    return;
+  }
+
+  if (!user || !user._id) {
+    toast.error('You must be logged in to flag a post');
+    return;
+  }
+
+  try {
+    setIsSubmittingFlag(true);
+    await axios.post(`${server}/forum/posts/${flaggedPostId}/flag`, {
+      reason: flagReason,
+      userId: user._id // Make sure to send the user ID
+    }, {
+      withCredentials: true // Important for sending cookies/session
+    });
+    
+    toast.success('Post has been flagged for review');
+    
+    // Update the posts array to reflect the flagged status
+    setPosts(posts.map(post => {
+      if (post._id === flaggedPostId) {
+        return { ...post, isFlagged: true };
+      }
+      return post;
+    }));
+    
+    setFlagModalOpen(false);
+    setFlagReason('');
+  } catch (err) {
+    console.error('Flagging error:', err);
+    toast.error(err.response?.data?.error || 'Failed to flag post. Please try again.');
+  } finally {
+    setIsSubmittingFlag(false);
+  }
+};
 
   const getFilteredPosts = () => {
     if (activeTab === 'latest') {
@@ -187,6 +257,64 @@ const ForumPage = () => {
     );
   };
 
+  // Flag Modal Component
+  const FlagModal = () => {
+  const textareaRef = useRef(null);
+  
+  useEffect(() => {
+    if (flagModalOpen && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [flagModalOpen]);
+
+  if (!flagModalOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+        <div className="flex items-center mb-4">
+          <BsShieldExclamation size={24} className="text-red-500 mr-2" />
+          <h3 className="text-lg font-semibold" style={{ color: colors.dark }}>Flag Inappropriate Content</h3>
+        </div>
+        
+        <div className="mb-4">
+          <p className="text-sm mb-2" style={{ color: colors.dark }}>
+            Please let us know why you're flagging this content:
+          </p>
+          <textarea
+            ref={textareaRef}
+            key="flag-reason-textarea"  // Add a key to prevent re-creation
+            value={flagReason}
+            onChange={(e) => setFlagReason(e.target.value)}
+            className="w-full border rounded p-2 text-sm"
+            style={{ borderColor: colors.secondary }}
+            rows="4"
+            placeholder="Explain why this post violates community guidelines..."
+          ></textarea>
+        </div>
+        
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={closeFlagModal}
+            className="px-4 py-2 rounded text-sm"
+            style={{ color: colors.dark }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={submitFlag}
+            disabled={isSubmittingFlag}
+            className="px-4 py-2 rounded text-sm text-white"
+            style={{ backgroundColor: colors.danger || '#ef4444' }}
+          >
+            {isSubmittingFlag ? 'Submitting...' : 'Submit Report'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
   return (
     <>
       <Header activeHeading={7} />
@@ -204,6 +332,11 @@ const ForumPage = () => {
               </button>
             </div>
           </header>
+
+          {/* Hate Speech Alert - Show when there's an error from the backend */}
+          {hateSpeechError && (
+            <HateSpeechAlert message={hateSpeechMessage} />
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
@@ -238,7 +371,7 @@ const ForumPage = () => {
                   <div className="p-8 flex justify-center">
                     <Loader />
                   </div>
-                ) : error ? (
+                ) : error && !error.includes('hate speech') ? (
                   <div className="text-center text-red-500 p-8">
                     <h2 className="text-2xl font-bold mb-2">Oops!</h2>
                     <p>{error}</p>
@@ -248,7 +381,7 @@ const ForumPage = () => {
                     {getFilteredPosts().map((post) => (
                       <div
                         key={post._id}
-                        className="p-6 hover:bg-gray-50 cursor-pointer transition-colors flex items-start space-x-4"
+                        className="p-6 hover:bg-gray-50 cursor-pointer transition-colors flex items-start space-x-4 relative"
                         onClick={() => navigate(`/forum/${post._id}`)}
                       >
                         <div className="flex flex-col items-center space-y-2 pt-1">
@@ -274,9 +407,34 @@ const ForumPage = () => {
                         </div>
 
                         <div className="flex-1">
-                          <h2 className="text-xl font-bold mb-2 hover:underline" style={{ color: colors.dark }}>
-                            {post.title}
-                          </h2>
+                          <div className="flex justify-between">
+                            <h2 className="text-xl font-bold mb-2 hover:underline" style={{ color: colors.dark }}>
+                              {post.title}
+                            </h2>
+                            
+                            {/* Flag Button */}
+                            <button
+                              onClick={(e) => handleFlagPost(post._id, e)}
+                              className="flex items-center gap-1 px-2 py-1 rounded text-sm opacity-60 hover:opacity-100 transition-opacity"
+                              style={{ color: colors.warning }}
+                              title="Flag inappropriate content"
+                            >
+                              <BsFlag size={14} />
+                              <span className="hidden sm:inline">Flag</span>
+                            </button>
+                          </div>
+                          
+                          {/* Flagged content warning */}
+                          {post.isFlagged && (
+                            <div className="mb-2 px-3 py-1 inline-flex items-center rounded-md"
+                              style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderLeft: `3px solid ${colors.warning}` }}>
+                              <BsShieldExclamation size={12} className="text-amber-500 mr-1" />
+                              <span className="text-xs" style={{ color: colors.warning }}>
+                                Content flagged for review
+                              </span>
+                            </div>
+                          )}
+                          
                           <p className="mb-3 line-clamp-2" style={{ color: '#555' }}>{post.content}</p>
                           <div className="flex items-center text-sm space-x-4" style={{ color: '#777' }}>
                             <div className="flex items-center">
@@ -297,7 +455,7 @@ const ForumPage = () => {
             </div>
 
             <div className="space-y-8">
-                            {/* Top Contributors Section */}
+              {/* Top Contributors Section */}
               <section className="bg-white rounded-xl shadow-md overflow-hidden">
                 <h2 className="text-lg font-semibold p-4 border-b flex items-center" style={{
                   background: `linear-gradient(to right, ${colors.secondary}, ${colors.primary})`,
@@ -352,10 +510,33 @@ const ForumPage = () => {
                   )}
                 </ul>
               </section>
+              
+              {/* Community Guidelines Section */}
+              <section className="bg-white rounded-xl shadow-md overflow-hidden">
+                <h2 className="text-lg font-semibold p-4 border-b flex items-center" style={{
+                  background: `linear-gradient(to right, ${colors.secondary}, ${colors.primary})`,
+                  color: colors.dark,
+                }}>
+                  <BsShieldExclamation className="mr-2" size={20} style={{ color: colors.primary }} />
+                  Community Guidelines
+                </h2>
+                <div className="p-4 text-sm" style={{ color: colors.dark }}>
+                  <p className="mb-2">Our forum uses AI-powered content moderation to maintain a respectful environment.</p>
+                  <ul className="pl-4 space-y-1">
+                    <li>• Be kind and respectful to others</li>
+                    <li>• Avoid hate speech and offensive language</li>
+                    <li>• Flag content that violates guidelines</li>
+                  </ul>
+                </div>
+              </section>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Flag Modal */}
+      <FlagModal />
+      
       <Footer />
     </>
   );

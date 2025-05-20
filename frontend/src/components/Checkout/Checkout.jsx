@@ -15,6 +15,8 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState("");
   const [discountPrice, setDiscountPrice] = useState(0);
   const [userInfo, setUserInfo] = useState(false); // Toggle for saved addresses
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
+  const [phoneError, setPhoneError] = useState("");
   const navigate = useNavigate();
 
   const subTotalPrice = cart.reduce(
@@ -23,6 +25,27 @@ const Checkout = () => {
   );
   const shipping = 150;
   const totalPrice = (subTotalPrice + shipping - discountPrice).toFixed(2);
+
+  const validatePhoneNumber = (phone) => {
+    // Phone validation for format: 0XXX-XXXXXXX (e.g., 0334-6030339)
+    const phoneRegex = /^0\d{3}-\d{7}$/;
+    
+    if (!phone) {
+      return "Phone number is required";
+    }
+    
+    if (!phoneRegex.test(phone)) {
+      return "Please enter a valid phone number in format: 0XXX-XXXXXXX";
+    }
+    
+    return "";
+  };
+
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    setPhoneNumber(value);
+    setPhoneError(validatePhoneNumber(value));
+  };
 
   const handleApplyCoupon = () => {
     if (couponCode === "DISCOUNT10") {
@@ -35,12 +58,20 @@ const Checkout = () => {
   };
 
   const handleContinueToPayment = () => {
+    // Validate phone number before proceeding
+    const phoneValidationError = validatePhoneNumber(phoneNumber);
+    if (phoneValidationError) {
+      setPhoneError(phoneValidationError);
+      toast.error("Please enter a valid phone number!");
+      return;
+    }
+
     if (!address1 || !address2 || !zipCode || !country || !city) {
       toast.error("Please fill all shipping details!");
       return;
     }
 
-    const shippingAddress = { address1, address2, zipCode, country, city };
+    const shippingAddress = { address1, address2, zipCode, country, city, phoneNumber };
     const orderData = { cart, subTotalPrice, shipping, discountPrice, totalPrice, shippingAddress, user };
     localStorage.setItem("latestOrder", JSON.stringify(orderData));
     navigate("/payment");
@@ -82,9 +113,16 @@ const Checkout = () => {
                 <label className="block text-sm font-medium text-[#5a4336]">Phone</label>
                 <input
                   type="text"
-                  defaultValue={user?.phoneNumber || ""}
-                  className="w-full px-3 py-2 rounded-lg border border-[#d8c4b8] focus:ring-1 focus:ring-[#a67d6d] focus:border-transparent"
+                  value={phoneNumber}
+                  onChange={handlePhoneChange}
+                  placeholder="e.g. 0334-6030339"
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    phoneError ? "border-red-500" : "border-[#d8c4b8]"
+                  } focus:ring-1 focus:ring-[#a67d6d] focus:border-transparent`}
                 />
+                {phoneError && (
+                  <p className="mt-1 text-xs text-red-500">{phoneError}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#5a4336]">Zip Code</label>

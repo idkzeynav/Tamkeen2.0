@@ -12,6 +12,7 @@
   "author": "Zainab Hasan",
   "license": "ISC",
   "dependencies": {
+    "@huggingface/inference": "^3.13.1",
     "@vitalets/google-translate-api": "^9.2.0",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.0",

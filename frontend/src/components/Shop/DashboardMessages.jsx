@@ -1,7 +1,3 @@
-// This is an updated version of DashboardMessages.jsx to match the layout and behavior of UserInbox.
-// All logic remains unchanged as per the request.
-// Changed components to reuse UserInbox structure and classes for consistent UI.
-
 import axios from "axios";
 import React, { useRef, useState } from "react";
 import { useEffect } from "react";
@@ -420,7 +416,7 @@ const UserInbox = ({
           className="p-2 bg-[#a67d6d] text-white my-2"
           onClick={() => setShowTranslated(!showTranslated)}
         >
-          {showTranslated ? "Original" : "Translated"}
+          {showTranslated ? "Show Original" : "Show Translated"}
         </button>
 
       {/* Messages Section */}

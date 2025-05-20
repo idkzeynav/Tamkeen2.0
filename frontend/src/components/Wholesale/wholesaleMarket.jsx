@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Header from '../Layout/Header';
 import Footer from '../Layout/Footer'
-import { MapPin, X, Navigation, AlertCircle, Check} from 'lucide-react';
+import { MapPin, X, Navigation, AlertCircle, Check, Filter } from 'lucide-react';
 import '../../App.css';import {
     getAllWholesaleMarkets,
     createWholesaleMarket,
@@ -153,6 +153,7 @@ const WholesaleMarketManagement = () => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [categories, setCategories] = useState(['all']);
     const [showMapAlert, setShowMapAlert] = useState(false);
+    const [showFilterOptions, setShowFilterOptions] = useState(false);
 
     useEffect(() => {
         const requestLocationPermission = async () => {
@@ -370,77 +371,116 @@ const WholesaleMarketManagement = () => {
         <div className="relative">
             <Header activeHeading={4} />
             <div className="min-h-screen bg-[#f7f1f1] p-6">
-<div className="text-center mb-12">
-    <h1 className="text-4xl font-bold text-[#5a4336] pb-2">Wholesale Markets</h1>
-    <div className="w-24 h-1 bg-[#c8a4a5] mx-auto rounded-full"></div>
-</div>                
-                <div className="mb-6 bg-white p-4 rounded-lg shadow space-y-4">
-                <div className="flex items-center gap-4">
-    <label className="text-[#5a4336] font-medium">Filter by Category:</label>
-    <select
-        value={selectedCategory}
-        onChange={(e) => setSelectedCategory(e.target.value)}
-        className="p-2 rounded-lg border border-[#c8a4a5] text-[#5a4336] focus:outline-none focus:ring-2 focus:ring-[#c8a4a5] appearance-none bg-white hover:border-[#8c6c6b] transition-colors select-none"
-        style={{
-            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c8a4a5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 1rem center',
-            backgroundSize: '1em',
-            WebkitAppearance: 'none',
-            MozAppearance: 'none'
-        }}
-    >
-        <option value="all" className="text-[#5a4336] bg-white hover:bg-[#f7f1f1]">All Categories</option>
-        {PREDEFINED_CATEGORIES.map(category => (
-            <option 
-                key={category} 
-                value={category} 
-                className="text-[#5a4336] bg-white hover:bg-[#f7f1f1]"
-            >
-                {category}
-            </option>
-        ))}
-    </select>
-</div>
-
-                    {userLocation && (
-                        <div className="flex flex-wrap items-center gap-4">
-                            <button
-                                onClick={() => setViewMode('all')}
-                                className={`px-6 py-2 rounded-lg transition-colors ${
-                                    viewMode === 'all'
-                                        ? 'bg-[#c8a4a5] text-white shadow-md'
-                                        : 'bg-gray-200 text-[#5a4336] hover:bg-gray-300'
-                                }`}
-                            >
-                                View All Markets
-                            </button>
-                            <button
-                                onClick={() => setViewMode('nearby')}
-                                className={`px-6 py-2 rounded-lg transition-colors ${
-                                    viewMode === 'nearby'
-                                        ? 'bg-[#c8a4a5] text-white shadow-md'
-                                        : 'bg-gray-200 text-[#5a4336] hover:bg-gray-300'
-                                }`}
-                            >
-                                Show Nearby Only
-                            </button>
+                <div className="text-center mb-8">
+                    <h1 className="text-4xl font-bold text-[#5a4336] pb-2">Wholesale Markets</h1>
+                    <div className="w-24 h-1 bg-[#c8a4a5] mx-auto rounded-full"></div>
+                </div>
+                
+                {/* New Filter Bar Design */}
+                <div className="mb-6 bg-white rounded-lg shadow overflow-hidden">
+                    <div className="flex items-center justify-between p-4 border-b border-[#e6d8d8]">
+                        <div className="flex items-center space-x-3">
+                            <Filter size={20} className="text-[#c8a4a5]" />
+                            <h3 className="font-medium text-[#5a4336]">Filter Markets</h3>
                         </div>
-                    )}
-
-                    {viewMode === 'nearby' && userLocation && (
-                        <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg">
-                            <MapPin size={20} className="text-[#c8a4a5]" />
-                            <label className="text-[#5a4336]">Show markets within:</label>
-                            <input
-                                type="number"
-                                value={radiusFilter}
-                                onChange={(e) => setRadiusFilter(Number(e.target.value))}
-                                className="p-2 rounded border border-[#c8a4a5] w-24"
-                                min="1"
-                                max="100"
-                            />
-                            <span className="text-[#5a4336]">km</span>
+                        <button 
+                            onClick={() => setShowFilterOptions(!showFilterOptions)}
+                            className="text-[#c8a4a5] hover:text-[#8c6c6b] transition-colors"
+                        >
+                            {showFilterOptions ? (
+                                <X size={20} />
+                            ) : (
+                                <span className="text-sm bg-[#f7f1f1] px-3 py-1 rounded-full">
+                                    {viewMode === 'nearby' ? 'Nearby' : 'All'} {selectedCategory !== 'all' ? `• ${selectedCategory}` : ''}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+                    
+                    {showFilterOptions && (
+                        <div className="p-4 space-y-4 animate-fadeIn">
+                            <div className="flex items-center gap-3">
+                                <label className="text-[#5a4336] font-medium whitespace-nowrap">View Mode:</label>
+                                <div className="flex bg-gray-100 rounded-lg overflow-hidden p-1">
+                                    <button
+                                        onClick={() => setViewMode('all')}
+                                        className={`px-4 py-2 rounded-md text-sm transition-colors ${
+                                            viewMode === 'all'
+                                                ? 'bg-[#c8a4a5] text-white shadow-sm'
+                                                : 'bg-transparent text-[#5a4336] hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        All Markets
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('nearby')}
+                                        className={`px-4 py-2 rounded-md text-sm flex items-center gap-1 transition-colors ${
+                                            viewMode === 'nearby'
+                                                ? 'bg-[#c8a4a5] text-white shadow-sm'
+                                                : 'bg-transparent text-[#5a4336] hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        <MapPin size={16} />
+                                        Nearby
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center gap-3">
+                                <label className="text-[#5a4336] font-medium">Category:</label>
+                                <select
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                    className="p-2 rounded-lg border border-[#c8a4a5] text-[#5a4336] focus:outline-none focus:ring-2 focus:ring-[#c8a4a5] appearance-none bg-white hover:border-[#8c6c6b] transition-colors select-none"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c8a4a5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 1rem center',
+                                        backgroundSize: '1em',
+                                        WebkitAppearance: 'none',
+                                        MozAppearance: 'none'
+                                    }}
+                                >
+                                    <option value="all" className="text-[#5a4336] bg-white hover:bg-[#f7f1f1]">All Categories</option>
+                                    {PREDEFINED_CATEGORIES.map(category => (
+                                        <option 
+                                            key={category} 
+                                            value={category} 
+                                            className="text-[#5a4336] bg-white hover:bg-[#f7f1f1]"
+                                        >
+                                            {category}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            {viewMode === 'nearby' && userLocation && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <label className="text-[#5a4336] font-medium whitespace-nowrap">Radius:</label>
+                                    <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
+                                        <input
+                                            type="range"
+                                            value={radiusFilter}
+                                            onChange={(e) => setRadiusFilter(Number(e.target.value))}
+                                            className="w-32 accent-[#c8a4a5]"
+                                            min="1"
+                                            max="100"
+                                        />
+                                        <div className="w-12 text-center font-medium text-[#5a4336]">
+                                            {radiusFilter} km
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div className="pt-2 flex justify-end">
+                                <button
+                                    onClick={() => setShowFilterOptions(false)}
+                                    className="bg-[#c8a4a5] text-white py-2 px-4 rounded-lg hover:bg-[#8c6c6b] transition-colors text-sm font-medium"
+                                >
+                                    Apply Filters
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -471,7 +511,6 @@ const WholesaleMarketManagement = () => {
                     )}
                 </div>
                 
-
                 {location.pathname === '/wholesale-markets' && (
                     <button
                         onClick={() => navigate('/')}
@@ -481,11 +520,10 @@ const WholesaleMarketManagement = () => {
                     </button>
                 )}
 
-{showMapAlert && <CustomAlert message="Opening directions in maps..." />}
+                {showMapAlert && <CustomAlert message="Opening directions in maps..." />}
             </div>
             <Footer/>
-            </div>
-
+        </div>
     );
 };
 

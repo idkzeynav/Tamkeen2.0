@@ -25,12 +25,19 @@ router.get(
               $sum: {
                 $multiply: [
                   "$cart.qty",
-                  {
-                    $ifNull: [
-                      "$cart.discountPrice",
-                      { $ifNull: ["$cart.originalPrice", "$cart.price"] },
-                    ],
-                  },
+                  { 
+                    $cond: {
+                      if: { $gt: ["$cart.discountPrice", 0] },
+                      then: "$cart.discountPrice",
+                      else: {
+                        $cond: {
+                          if: { $gt: ["$cart.originalPrice", 0] },
+                          then: "$cart.originalPrice",
+                          else: "$cart.price"
+                        }
+                      }
+                    }
+                  }
                 ],
               },
             },
@@ -50,7 +57,7 @@ router.get(
         { $sort: { totalSales: -1 } },
       ]);
 
-      // 🔹 Get region summary
+      // 🔹 Get region summary with fixed price calculation
       const regionSummary = await Order.aggregate([
         { $unwind: "$cart" },
         {
@@ -63,12 +70,19 @@ router.get(
               $sum: {
                 $multiply: [
                   "$cart.qty",
-                  {
-                    $ifNull: [
-                      "$cart.discountPrice",
-                      { $ifNull: ["$cart.originalPrice", "$cart.price"] },
-                    ],
-                  },
+                  { 
+                    $cond: {
+                      if: { $gt: ["$cart.discountPrice", 0] },
+                      then: "$cart.discountPrice",
+                      else: {
+                        $cond: {
+                          if: { $gt: ["$cart.originalPrice", 0] },
+                          then: "$cart.originalPrice",
+                          else: "$cart.price"
+                        }
+                      }
+                    }
+                  }
                 ],
               },
             },
@@ -77,12 +91,19 @@ router.get(
               $avg: {
                 $multiply: [
                   "$cart.qty",
-                  {
-                    $ifNull: [
-                      "$cart.discountPrice",
-                      { $ifNull: ["$cart.originalPrice", "$cart.price"] },
-                    ],
-                  },
+                  { 
+                    $cond: {
+                      if: { $gt: ["$cart.discountPrice", 0] },
+                      then: "$cart.discountPrice",
+                      else: {
+                        $cond: {
+                          if: { $gt: ["$cart.originalPrice", 0] },
+                          then: "$cart.originalPrice",
+                          else: "$cart.price"
+                        }
+                      }
+                    }
+                  }
                 ],
               },
             },
@@ -101,7 +122,7 @@ router.get(
         { $sort: { totalSales: -1 } },
       ]);
 
-      // 🔹 Get top categories by region
+      // 🔹 Get top categories by region with fixed price calculation
       const topCategoriesByRegion = await Order.aggregate([
         { $unwind: "$cart" },
         {
@@ -115,12 +136,19 @@ router.get(
               $sum: {
                 $multiply: [
                   "$cart.qty",
-                  {
-                    $ifNull: [
-                      "$cart.discountPrice",
-                      { $ifNull: ["$cart.originalPrice", "$cart.price"] },
-                    ],
-                  },
+                  { 
+                    $cond: {
+                      if: { $gt: ["$cart.discountPrice", 0] },
+                      then: "$cart.discountPrice",
+                      else: {
+                        $cond: {
+                          if: { $gt: ["$cart.originalPrice", 0] },
+                          then: "$cart.originalPrice",
+                          else: "$cart.price"
+                        }
+                      }
+                    }
+                  }
                 ],
               },
             },
@@ -205,12 +233,19 @@ router.get(
               $sum: {
                 $multiply: [
                   "$cart.qty",
-                  {
-                    $ifNull: [
-                      "$cart.discountPrice",
-                      { $ifNull: ["$cart.originalPrice", "$cart.price"] },
-                    ],
-                  },
+                  { 
+                    $cond: {
+                      if: { $gt: ["$cart.discountPrice", 0] },
+                      then: "$cart.discountPrice",
+                      else: {
+                        $cond: {
+                          if: { $gt: ["$cart.originalPrice", 0] },
+                          then: "$cart.originalPrice",
+                          else: "$cart.price"
+                        }
+                      }
+                    }
+                  }
                 ],
               },
             },

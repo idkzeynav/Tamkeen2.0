@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { server } from '../../server';
+import Footer from '../Layout/Footer';
+import Header from '../Layout/Header';
+
 import { 
   Award, 
   Clock, 
@@ -131,6 +134,9 @@ const UserWorkshops = () => {
   );
 
   return (
+
+    <div className="relative">
+    <Header  />
     <div className="min-h-screen bg-gradient-to-br from-[#f7f1f1] to-[#e6d6d6] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Motivational Header */}
@@ -217,6 +223,8 @@ const UserWorkshops = () => {
           </>
         )}
       </div>
+    </div>
+    <Footer></Footer>
     </div>
   );
 };

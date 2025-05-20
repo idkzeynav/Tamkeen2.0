@@ -215,12 +215,12 @@ const UserOrderDetails = () => {
         </div>
 
         {/* Send Message Button */}
-        <Link to= "/inbox">
+        {/* <Link to= "/inbox">
         <div className="bg-[#c8a4a5] text-white py-2 rounded-md hover:bg-opacity-80 transition duration-200 mt-4 text-center transition-transform transform hover:scale-105 w-1/2 mx-auto">
   Send Message
 </div>
 
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

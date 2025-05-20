@@ -358,11 +358,11 @@ const RegionAreaAnalysisDashboard = () => {
   }
   
   // Handle click on chart item to open map modal
-  const handleAreaClick = useCallback(async (areaName, regionName) => {
-   // Check if location exists in FILTERED data
-  const existsInData = filteredData.some(d => 
-    d.area === areaName && d.region === regionName
-  );
+ const handleAreaClick = useCallback(async (areaName, regionName) => {
+  // Check if location exists in FILTERED data
+  const existsInData = areaName 
+    ? filteredData.some(d => d.area === areaName && d.region === regionName)
+    : filteredData.some(d => d.region === regionName);
 
   if (!existsInData) return;
   // First check if we already have this location
@@ -404,7 +404,7 @@ const RegionAreaAnalysisDashboard = () => {
     } else {
       console.error("Could not geocode location:", areaName, regionName);
     }
-  }, [shopLocations, geocodeArea, salesData]);
+}, [shopLocations, geocodeArea, filteredData]);
 
   // Custom rendering for pie chart with click handler
   const renderActiveShape = (props) => {
@@ -709,25 +709,25 @@ const RegionAreaAnalysisDashboard = () => {
             <p className="mt-2" style={{ color: '#5a4336' }}>
               Opening a new shop in this area would likely yield the best results based on historical sales data.
             </p>
-            <button 
-               className="mt-2 px-4 py-2  rounded-lg transition-colors"
-               style={{ 
-                 backgroundColor: '#c8a4a5',
-                 backgroundImage: 'linear-gradient(to right, #c8a4a5, #8c6c6b)',
-                 color: 'white'
-               }}
-              onClick={() => {
-                const bestLocation = areaData[0];
-                if (bestLocation) {
-                  handleAreaClick(
-                    selectedRegion === 'All' ? null : bestLocation.name,
-                    selectedRegion === 'All' ? bestLocation.name : selectedRegion
-                  );
-                }
-              }}
-            >
-              View on Map
-            </button>
+<button 
+  className="mt-2 px-4 py-2 rounded-lg transition-colors"
+  style={{ 
+    backgroundColor: '#c8a4a5',
+    backgroundImage: 'linear-gradient(to right, #c8a4a5, #8c6c6b)',
+    color: 'white'
+  }}
+ // In the DashboardContent component's button onClick handler:
+ onClick={() => {
+              const bestLocation = areaData[0];
+              if (bestLocation) {
+                const targetRegion = selectedRegion === 'All' ? bestLocation.name : selectedRegion;
+                const targetArea = selectedRegion === 'All' ? null : bestLocation.name;
+                handleAreaClick(targetArea, targetRegion);
+              }
+            }}
+>
+  View on Map
+</button>
           </div>
         </div>
         

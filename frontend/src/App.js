@@ -60,7 +60,7 @@ import {
   AdminDashboardSellers,
   AdminDashboardOrders,
   AdminDashboardProducts,
-
+  AdminFlaggedPosts,
   CreateWorkshop,
   WorkshopList,
   Adminworkshopdetail,
@@ -597,7 +597,12 @@ n
             </ProtectedAdminRoute>
           }
         />
-     
+        <Route path="/admin-flagged-posts" element={
+        <ProtectedAdminRoute>
+          <AdminFlaggedPosts />
+        </ProtectedAdminRoute>
+      } />
+          
     
       </Routes>
       <ToastContainer

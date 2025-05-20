@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { server } from '../server';
@@ -11,7 +11,11 @@ import {
   MessageSquare,
   Send
 } from 'lucide-react';
-
+import { AiOutlineFire } from 'react-icons/ai';
+import { BsPersonCheckFill } from 'react-icons/bs';
+import { BsShieldExclamation, BsFlag } from 'react-icons/bs';
+import { toast } from 'react-toastify';
+import HateSpeechAlert from '../components/HateSpeechAlert/HateSpeechAlert';
 // Color Scheme
 const colors = {
   primary: '#c8a4a5', // Soft pink
@@ -21,6 +25,8 @@ const colors = {
   white: '#ffffff', // Pure white
   dark: '#5a4336', // Dark brown for text
   border: '#ebebeb', // Light border color
+  danger: '#ef4444', // Red for alerts
+  warning: '#f59e0b', // Amber for warnings
 };
 
 const PostDetailsPage = () => {
@@ -31,6 +37,15 @@ const PostDetailsPage = () => {
   const [replyContent, setReplyContent] = useState('');
   const [nestedReplyContent, setNestedReplyContent] = useState({});
   const [activeReplyId, setActiveReplyId] = useState(null);
+  const [topContributors, setTopContributors] = useState([]);
+  const [topHelpers, setTopHelpers] = useState([]);
+  const [hateSpeechError, setHateSpeechError] = useState(false);
+  const [hateSpeechMessage, setHateSpeechMessage] = useState('');
+  const [flagModalOpen, setFlagModalOpen] = useState(false);
+  const [flagReason, setFlagReason] = useState('');
+  const [flaggedPostId, setFlaggedPostId] = useState(null);
+  const [isSubmittingFlag, setIsSubmittingFlag] = useState(false);
+  
   const navigate = useNavigate();
 
   // Get the authenticated user's name from Redux
@@ -48,7 +63,60 @@ const PostDetailsPage = () => {
       }
     };
 
+    const fetchAllPosts = async () => {
+      try {
+        const res = await axios.get(`${server}/forum/posts`);
+        
+        // Calculate top contributors based on number of posts
+        const contributorsMap = {};
+        res.data.forEach((post) => {
+          if (!contributorsMap[post.name]) {
+            contributorsMap[post.name] = {
+              name: post.name,
+              contributions: 1,
+            };
+          } else {
+            contributorsMap[post.name].contributions += 1;
+          }
+        });
+
+        // Convert to array and sort by contributions
+        const sortedContributors = Object.values(contributorsMap)
+          .sort((a, b) => b.contributions - a.contributions)
+          .slice(0, 3); // Top 3 contributors
+
+        setTopContributors(sortedContributors);
+
+        // Calculate top helpers based on number of replies
+        const helpersMap = {};
+        res.data.forEach((post) => {
+          if (post.replies && post.replies.length > 0) {
+            post.replies.forEach((reply) => {
+              if (!helpersMap[reply.name]) {
+                helpersMap[reply.name] = {
+                  name: reply.name,
+                  helpfulAnswers: 1,
+                };
+              } else {
+                helpersMap[reply.name].helpfulAnswers += 1;
+              }
+            });
+          }
+        });
+
+        // Convert to array and sort by helpful answers
+        const sortedHelpers = Object.values(helpersMap)
+          .sort((a, b) => b.helpfulAnswers - a.helpfulAnswers)
+          .slice(0, 3); // Top 3 helpers
+
+        setTopHelpers(sortedHelpers);
+      } catch (err) {
+        console.error('Failed to fetch all posts for contributors and helpers');
+      }
+    };
+
     fetchPost();
+    fetchAllPosts();
   }, [postId]);
 
   const handleVote = async (postId, voteType) => {
@@ -75,6 +143,8 @@ const PostDetailsPage = () => {
 
   const handleReplySubmit = async (e) => {
     e.preventDefault();
+    setHateSpeechError(false);
+    
     try {
       const res = await axios.post(`${server}/forum/posts/${postId}/reply`, {
         content: replyContent,
@@ -83,12 +153,20 @@ const PostDetailsPage = () => {
       setPost(res.data);
       setReplyContent('');
     } catch (err) {
-      setError('Failed to add reply.');
+      if (err.response && err.response.status === 403 && 
+          err.response.data.error.toLowerCase().includes('hate speech')) {
+        setHateSpeechError(true);
+        setHateSpeechMessage(err.response.data.error || 'Your reply contains content that violates our community guidelines.');
+      } else {
+        setError('Failed to add reply.');
+      }
     }
   };
 
   const handleNestedReplySubmit = async (replyId, e) => {
     e.preventDefault();
+    setHateSpeechError(false);
+    
     try {
       const res = await axios.post(
         `${server}/forum/posts/${postId}/replies/${replyId}/reply`,
@@ -98,13 +176,181 @@ const PostDetailsPage = () => {
       setNestedReplyContent({ ...nestedReplyContent, [replyId]: '' });
       setActiveReplyId(null);
     } catch (err) {
-      setError('Failed to add nested reply.');
+      if (err.response && err.response.status === 403 && 
+          err.response.data.error.toLowerCase().includes('hate speech')) {
+        setHateSpeechError(true);
+        setHateSpeechMessage(err.response.data.error || 'Your reply contains content that violates our community guidelines.');
+      } else {
+        setError('Failed to add nested reply.');
+      }
     }
   };
 
-  const toggleNestedReplyForm = (replyId) => {
-    setActiveReplyId(activeReplyId === replyId ? null : replyId);
+const handleFlagPost = (postId, e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  if (!user) {
+    toast.error('You must be logged in to flag a post');
+    return;
+  }
+  
+  setFlaggedPostId(postId);
+  setFlagModalOpen(true);
+  setFlagReason('');
+};
+
+const toggleNestedReplyForm = (replyId) => { setActiveReplyId(activeReplyId === replyId ? null : replyId)};
+
+ const submitFlag = async () => {
+  if (!flagReason.trim()) {
+    toast.error('Please provide a reason for flagging this post');
+    return;
+  }
+
+  if (!user || !user._id) {
+    toast.error('You must be logged in to flag a post');
+    return;
+  }
+
+  try {
+    setIsSubmittingFlag(true);
+    const response = await axios.post(
+      `${server}/forum/posts/${flaggedPostId}/flag`,
+      {
+        reason: flagReason,
+        userId: user._id
+      },
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
+    
+    if (response.data.success) {
+      toast.success('Post has been flagged for review');
+      setPost(prev => ({ ...prev, isFlagged: true }));
+      setFlagModalOpen(false);
+      setFlagReason('');
+    } else {
+      throw new Error(response.data.error || 'Failed to flag post');
+    }
+  } catch (err) {
+    console.error('Flagging error:', err);
+    toast.error(err.response?.data?.error || 'Failed to flag post. Please try again.');
+  } finally {
+    setIsSubmittingFlag(false);
+  }
+};
+
+  const getInitialsAvatar = (name) => {
+    if (!name) return 'U';
+    const nameParts = name.split(' ');
+    if (nameParts.length > 1) {
+      return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
+
+  const getAvatarColor = (name) => {
+    if (!name) return colors.primary;
+
+    const colorOptions = [
+      colors.primary,
+      colors.secondary,
+      '#d48c8f', // Slightly darker pink
+      '#b38d82', // Muted brown
+    ];
+
+    const charCode = name.charCodeAt(0);
+    return colorOptions[charCode % colorOptions.length];
+  };
+
+  const InitialsAvatar = ({ name }) => {
+    const initials = getInitialsAvatar(name);
+    const bgColor = getAvatarColor(name);
+
+    return (
+      <div
+        className="flex items-center justify-center rounded-full flex-shrink-0"
+        style={{
+          backgroundColor: bgColor,
+          color: colors.white,
+          width: '36px',
+          height: '36px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+        }}
+      >
+        {initials}
+      </div>
+    );
+  };
+ const closeFlagModal = () => {
+    setFlagModalOpen(false);
+    setFlagReason('');
+    setFlaggedPostId(null);
+    setIsSubmittingFlag(false);
+  };
+  // Flag Modal Component
+ const FlagModal = () => {
+   const textareaRef = useRef(null);
+   
+   useEffect(() => {
+     if (flagModalOpen && textareaRef.current) {
+       textareaRef.current.focus();
+     }
+   }, [flagModalOpen]);
+ 
+   if (!flagModalOpen) return null;
+   
+   return (
+     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+       <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+         <div className="flex items-center mb-4">
+           <BsShieldExclamation size={24} className="text-red-500 mr-2" />
+           <h3 className="text-lg font-semibold" style={{ color: colors.dark }}>Flag Inappropriate Content</h3>
+         </div>
+         
+         <div className="mb-4">
+           <p className="text-sm mb-2" style={{ color: colors.dark }}>
+             Please let us know why you're flagging this content:
+           </p>
+           <textarea
+             ref={textareaRef}
+             key="flag-reason-textarea"  // Add a key to prevent re-creation
+             value={flagReason}
+             onChange={(e) => setFlagReason(e.target.value)}
+             className="w-full border rounded p-2 text-sm"
+             style={{ borderColor: colors.secondary }}
+             rows="4"
+             placeholder="Explain why this post violates community guidelines..."
+           ></textarea>
+         </div>
+         
+         <div className="flex justify-end space-x-2">
+           <button
+             onClick={closeFlagModal}
+             className="px-4 py-2 rounded text-sm"
+             style={{ color: colors.dark }}
+           >
+             Cancel
+           </button>
+           <button
+             onClick={submitFlag}
+             disabled={isSubmittingFlag}
+             className="px-4 py-2 rounded text-sm text-white"
+             style={{ backgroundColor: colors.danger || '#ef4444' }}
+           >
+             {isSubmittingFlag ? 'Submitting...' : 'Submit Report'}
+           </button>
+         </div>
+       </div>
+     </div>
+   );
+ };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.light }}>
@@ -245,71 +491,100 @@ const PostDetailsPage = () => {
     <>
       <Header activeHeading={7} />
       <div className="min-h-screen py-8" style={{ backgroundColor: colors.light }}>
-        <div className="container mx-auto px-4 max-w-4xl">
-          {/* Main Post */}
-          <div className="bg-white rounded-xl shadow-md mb-6" style={{ borderColor: colors.border }}>
-            <div className="p-6">
-              <h2 
-                className="text-xl font-medium mb-2"
-                style={{ color: colors.dark }}
-              >
-                {post.title}
-              </h2>
-              
-              <div className="text-sm mb-4" style={{ color: colors.primary }}>
-                {post.name} • {formatDate(post.createdAt || new Date())}
-              </div>
-              
-              <div className="mb-4 text-sm" style={{ color: colors.dark }}>
-                <p>{post.content}</p>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleVote(post._id, 'upvote')}
-                  className="flex items-center px-2 py-1 rounded hover:bg-gray-100"
-                  style={{ color: 'gray' }}
-                >
-                  <ArrowUp size={16} />
-                  <span className="ml-1">{post.votes}</span>
-                </button>
-                <button
-                  onClick={() => handleVote(post._id, 'downvote')}
-                  className="px-2 py-1 rounded hover:bg-gray-100"
-                  style={{ color: 'gray' }}
-                >
-                  <ArrowDown size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Replies Section */}
-          <div className="mb-6">
-            <div className="flex items-center mb-4">
-              <MessageSquare size={16} style={{ color: colors.primary }} />
-              <h3 className="ml-2 text-lg font-medium" style={{ color: colors.dark }}>
-                Replies ({post.replies.length})
-              </h3>
-            </div>
-            
-            {post.replies.length === 0 ? (
-              <div className="bg-white p-4 rounded-xl shadow-md" style={{ borderColor: colors.border }}>
-                <p className="text-sm text-gray-500">No replies yet.</p>
-              </div>
-            ) : (
-              <div className="bg-white p-4 rounded-xl shadow-md" style={{ borderColor: colors.border }}>
-                {renderReplies(post.replies)}
-              </div>
-            )}
-          </div>
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              {/* Main Post */}
+              <div className="bg-white rounded-xl shadow-md mb-6" style={{ borderColor: colors.border }}>
+                <div className="p-6">
+                  {/* Hate Speech Alert */}
+                  {hateSpeechError && <HateSpeechAlert message={hateSpeechMessage} />}
+                  
+                  {/* Post Title with Flag Button */}
+                  <div className="flex justify-between items-center mb-2">
+                    <h2 
+                      className="text-xl font-medium"
+                      style={{ color: colors.dark }}
+                    >
+                      {post.title}
+                    </h2>
+                    
+                    <button
+                      onClick={(e) => handleFlagPost(post._id, e)}
+                      className="flex items-center gap-1 px-2 py-1 rounded text-sm opacity-60 hover:opacity-100 transition-opacity"
+                      style={{ color: colors.warning || '#f59e0b' }}
+                      title="Flag inappropriate content"
+                    >
+                      <BsFlag size={14} />
+                      <span className="hidden sm:inline">Flag</span>
+                    </button>
+                  </div>
 
-          {/* Main Reply Form */}
-          <div 
+                  {/* Show flagged warning if post is flagged */}
+                  {post.isFlagged && (
+                    <div className="mb-2 px-3 py-1 inline-flex items-center rounded-md"
+                      style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderLeft: '3px solid #f59e0b' }}>
+                      <BsShieldExclamation size={12} className="text-amber-500 mr-1" />
+                      <span className="text-xs" style={{ color: colors.warning || '#f59e0b' }}>
+                        Content flagged for review
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="text-sm mb-4" style={{ color: colors.primary }}>
+                    {post.name} • {formatDate(post.createdAt || new Date())}
+                  </div>
+                  
+                  <div className="mb-4 text-sm" style={{ color: colors.dark }}>
+                    <p>{post.content}</p>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleVote(post._id, 'upvote')}
+                      className="flex items-center px-2 py-1 rounded hover:bg-gray-100"
+                      style={{ color: 'gray' }}
+                    >
+                      <ArrowUp size={16} />
+                      <span className="ml-1">{post.votes}</span>
+                    </button>
+                    <button
+                      onClick={() => handleVote(post._id, 'downvote')}
+                      className="px-2 py-1 rounded hover:bg-gray-100"
+                      style={{ color: 'gray' }}
+                    >
+                      <ArrowDown size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Replies Section */}
+              <div className="mb-6">
+                <div className="flex items-center mb-4">
+                  <MessageSquare size={16} style={{ color: colors.primary }} />
+                  <h3 className="ml-2 text-lg font-medium" style={{ color: colors.dark }}>
+                    Replies ({post.replies.length})
+                  </h3>
+                </div>
+                
+                {post.replies.length === 0 ? (
+                  <div className="bg-white p-4 rounded-xl shadow-md" style={{ borderColor: colors.border }}>
+                    <p className="text-sm text-gray-500">No replies yet.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white p-4 rounded-xl shadow-md" style={{ borderColor: colors.border }}>
+                    {renderReplies(post.replies)}
+                  </div>
+                )}
+              </div>
+
+              {/* Main Reply Form */}
+              <div 
                 className="mt-8 p-6 rounded-xl"
                 style={{ 
                   backgroundColor: colors.tertiary,
-                  border: `1px solid ${colors.lightBorder}`
+                  border: `1px solid ${colors.border}`
                 }}
               >
                 <h4 
@@ -327,10 +602,9 @@ const PostDetailsPage = () => {
                     placeholder="Share your thoughts..."
                     className="w-full p-4 border rounded-xl focus:outline-none focus:ring-2 text-gray-700"
                     style={{ 
-                      borderColor: colors.lightBorder,
+                      borderColor: colors.border,
                       backgroundColor: colors.white,
-                      minHeight: '120px',
-                      focusRing: colors.primary
+                      minHeight: '120px'
                     }}
                     required
                   ></textarea>
@@ -349,9 +623,73 @@ const PostDetailsPage = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              {/* Top Contributors Section */}
+              <section className="bg-white rounded-xl shadow-md overflow-hidden">
+                <h2 className="text-lg font-semibold p-4 border-b flex items-center" style={{
+                  background: `linear-gradient(to right, ${colors.secondary}, ${colors.primary})`,
+                  color: colors.dark,
+                }}>
+                  <AiOutlineFire className="mr-2" size={20} style={{ color: colors.primary }} />
+                  Top Contributors
+                </h2>
+                <ul className="divide-y">
+                  {topContributors.length > 0 ? (
+                    topContributors.map((contributor) => (
+                      <li key={contributor.name} className="p-4 hover:bg-gray-50">
+                        <div className="flex items-center">
+                          <InitialsAvatar name={contributor.name} />
+                          <div className="ml-3 flex-1">
+                            <h3 className="font-medium" style={{ color: colors.dark }}>{contributor.name}</h3>
+                            <p style={{ color: '#777' }} className="text-sm">{contributor.contributions} contributions</p>
+                          </div>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="p-4 text-center" style={{ color: '#777' }}>No contributors yet</li>
+                  )}
+                </ul>
+              </section>
+
+              {/* Top Helpers Section */}
+              <section className="bg-white rounded-xl shadow-md overflow-hidden">
+                <h2 className="text-lg font-semibold p-4 border-b flex items-center" style={{
+                  background: `linear-gradient(to right, ${colors.secondary}, ${colors.primary})`,
+                  color: colors.dark,
+                }}>
+                  <BsPersonCheckFill className="mr-2" size={20} style={{ color: colors.primary }} />
+                  Top Helpers
+                </h2>
+                <ul className="divide-y">
+                  {topHelpers.length > 0 ? (
+                    topHelpers.map((helper) => (
+                      <li key={helper.name} className="p-4 hover:bg-gray-50">
+                        <div className="flex items-center">
+                          <InitialsAvatar name={helper.name} />
+                          <div className="ml-3 flex-1">
+                            <h3 className="font-medium" style={{ color: colors.dark }}>{helper.name}</h3>
+                            <p style={{ color: '#777' }} className="text-sm">{helper.helpfulAnswers} helpful answers</p>
+                          </div>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="p-4 text-center" style={{ color: '#777' }}>No helpers yet</li>
+                  )}
+                </ul>
+              </section>
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* Flag Modal */}
+      <FlagModal />
+      
       <Footer />
     </>
   );

@@ -12,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 import AdminHeader from "../components/Layout/AdminHeader"; // Import AdminHeader
 import AdminSideBar from "../components/Admin/Layout/AdminSideBar.jsx"; // Import AdminSideBar
 import '../App.css'
+import { MapPin, Phone } from 'lucide-react';
+
 const AdminWholesaleMarketsPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -145,13 +147,21 @@ const handleMaterialTypeChange = (index, value) => {
 };
 
   return (
-<div>
+    <div className="bg-[#f7f1f1] min-h-screen">
       <AdminHeader /> {/* Include AdminHeader */}
       <div className="w-full flex">
         <div className="w-[80px] 800px:w-[330px]">
           <AdminSideBar active={6} /> {/* Set appropriate active menu */}
         </div>
         <div className="w-full p-4">      <h3 className="text-[22px] font-Poppins pb-2">Wholesale Markets</h3>
+        <div className="flex justify-end mb-4">
+            <button
+              onClick={() => navigate("/admin-wholesale-markets/create")}
+              className="bg-gradient-to-r from-[#c8a4a5] to-[#8c6c6b] text-white py-2 px-6 rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Create New Wholesale Market
+            </button>
+          </div>
 
       {showSuccessPopup && (
         <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg">
@@ -185,12 +195,28 @@ const handleMaterialTypeChange = (index, value) => {
                         }
                     </div>
                 </div>
+              
                 <div className="text-[#5a4336] mb-4">
-                    <p className="mb-2"><span className="font-medium">Location:</span> {market.location}</p>
-                    {market.contactInfo && (
-                        <p><span className="font-medium">Contact:</span> {market.contactInfo}</p>
-                    )}
-                </div>
+    <p className="mb-2 flex items-center gap-2">
+        <MapPin size={18} className="text-[#c8a4a5] flex-shrink-0" />
+        <span>
+            <span className="font-medium">Location:</span>{" "}
+            {market.location.replace(/,?\s?\d+(\.\d+)?/g, "").trim()}
+        </span>
+    </p>
+    {market.contactInfo && (
+        <p className="flex items-center gap-2">
+            <Phone size={18} className="text-[#c8a4a5] flex-shrink-0" />
+            <span>
+                <span className="font-medium">Contact:</span> {market.contactInfo}
+            </span>
+        </p>
+    )}
+</div>
+
+
+
+
                 <div className="flex justify-end space-x-4">
                     <Link 
                         to={`/admin-wholesale-markets/update/${market._id}`}
@@ -210,14 +236,8 @@ const handleMaterialTypeChange = (index, value) => {
     ))}
 </div>
 
-          <div className="mt-6">
-            <button
-              onClick={() => navigate("/admin-wholesale-markets/create")}
-              className="bg-[#c8a4a5] text-white py-3 px-8 rounded-full transition-all duration-300 hover:bg-[#8c6c6b] transform hover:scale-105"
-            >
-              Create New Wholesale Market
-            </button>
-          </div>
+
+
         </>
       )}
       {showForm && (

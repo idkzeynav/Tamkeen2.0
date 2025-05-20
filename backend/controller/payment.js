@@ -29,6 +29,8 @@ const UserWorkshop = require("../model/userworkshop");
  * Process a generic payment through Stripe
  * @route POST /process
  */
+
+
 router.post(
   "/process",
   catchAsyncErrors(async (req, res, next) => {
@@ -40,7 +42,6 @@ router.post(
       },
       payment_method_types: ['card']
     });
-    
     res.status(200).json({
       success: true,
       client_secret: myPayment.client_secret,
@@ -48,17 +49,14 @@ router.post(
   })
 );
 
-/**
- * Return the Stripe API key from environment variables
- * @route GET /stripeapikey
- */
-router.post(
+router.get(
   "/stripeapikey",
   catchAsyncErrors(async (req, res, next) => {
     res.status(200).json({ stripeApikey: process.env.STRIPE_API_KEY });
   })
 );
 
+module.exports = router;
 // Certificate payment routes
 //---------------------------
 

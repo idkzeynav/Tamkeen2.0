@@ -3,7 +3,7 @@ import AdminDashboardUsers from "../pages/AdminDashboardUsers";
 import AdminDashboardSellers from "../pages/AdminDashboardSellers";
 import AdminDashboardOrders from "../pages/AdminDashboardOrders";
 import AdminDashboardProducts from "../pages/AdminDashboardProducts";
-
+import AdminFlaggedPosts from "../pages/AdminFlaggedPosts";
 
 import CreateWorkshop from "../components/workshop/createworkshop";
 import WorkshopList from "../components/workshop/getworkshop";
@@ -14,7 +14,7 @@ export {
   AdminDashboardSellers,
   AdminDashboardOrders,
   AdminDashboardProducts,
-
+  AdminFlaggedPosts,
 
   CreateWorkshop,
   WorkshopList,

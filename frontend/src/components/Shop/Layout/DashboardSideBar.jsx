@@ -8,7 +8,7 @@ import { CiSettings } from "react-icons/ci";
 import { MdOutlineLocalOffer } from "react-icons/md";
 import { GiBuyCard } from "react-icons/gi";
 
-const MenuItem = ({ icon: Icon, label, isActive, onClick, children, isOpen }) => {
+const MenuItem = ({ icon: Icon, label, isActive, onClick, children, isOpen, showInfoIcon, onInfoClick }) => {
   return (
     <div className="w-full">
       <div 
@@ -25,10 +25,24 @@ const MenuItem = ({ icon: Icon, label, isActive, onClick, children, isOpen }) =>
         }`}>
           {label}
         </span>
+        
+        {/* Info Icon (if needed) */}
+        {showInfoIcon && (
+          <AiOutlineInfoCircle
+            size={18}
+            className="ml-auto mr-2 text-gray-400 cursor-pointer hover:text-[#c8a4a5]"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInfoClick();
+            }}
+          />
+        )}
+        
+        {/* Dropdown Arrow (if has children) */}
         {children && (
           <AiOutlineRight
             size={16}
-            className={`ml-auto transition-transform ${isOpen ? "rotate-90" : ""}`}
+            className={`${showInfoIcon ? 'ml-1' : 'ml-auto'} transition-transform ${isOpen ? "rotate-90" : ""}`}
           />
         )}
       </div>
@@ -43,6 +57,7 @@ const MenuItem = ({ icon: Icon, label, isActive, onClick, children, isOpen }) =>
 
 const DashboardSideBar = ({ active }) => {
   const [openMenus, setOpenMenus] = useState({
+    products: false,
     services: false,
     procurement: false
   });
@@ -129,36 +144,31 @@ const DashboardSideBar = ({ active }) => {
           </Link>
         </MenuItem>
 
-        {/* Procurement Section */}
-        <div className="relative">
-          <MenuItem 
-            icon={AiOutlineFolderAdd} 
-            label="Procurement" 
-            isActive={active === 17 || active === 18}
-            isOpen={openMenus.procurement}
-            onClick={() => toggleMenu('procurement')}
-          >
-            <Link to="/RFQ">
-              <MenuItem 
-                icon={MdOutlineLocalOffer} 
-                label="RFQ" 
-                isActive={active === 17} 
-              />
-            </Link>
-            <Link to="/sellerbulkorders">
-              <MenuItem 
-                icon={GiBuyCard} 
-                label="Bulk Orders" 
-                isActive={active === 18} 
-              />
-            </Link>
-          </MenuItem>
-          <AiOutlineInfoCircle
-            size={18}
-            className="absolute right-2 top-4 text-gray-400 cursor-pointer hover:text-[#c8a4a5]"
-            onClick={() => setIsPopupVisible(true)}
-          />
-        </div>
+        {/* Procurement Section - Fixed with properly aligned info icon */}
+        <MenuItem 
+          icon={AiOutlineFolderAdd} 
+          label="Procurement" 
+          isActive={active === 17 || active === 18}
+          isOpen={openMenus.procurement}
+          onClick={() => toggleMenu('procurement')}
+          showInfoIcon={true}
+          onInfoClick={() => setIsPopupVisible(true)}
+        >
+          <Link to="/RFQ">
+            <MenuItem 
+              icon={MdOutlineLocalOffer} 
+              label="RFQ" 
+              isActive={active === 17} 
+            />
+          </Link>
+          <Link to="/sellerbulkorders">
+            <MenuItem 
+              icon={GiBuyCard} 
+              label="Bulk Orders" 
+              isActive={active === 18} 
+            />
+          </Link>
+        </MenuItem>
 
         <Link to="/dashboard-messages">
           <MenuItem 

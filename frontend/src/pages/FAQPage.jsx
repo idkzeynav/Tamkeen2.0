@@ -103,7 +103,7 @@ const faqData = [
         id: 1,
         question: "What is your return policy?",
         answer:
-            "If you're not satisfied with your purchase, we accept returns within 30 days of delivery. To initiate a return, email us at support@myecommercestore.com with your order number and a brief explanation.",
+            "We do not offer refunds or returns. All sales are final once the order has been placed and delivered.",
     },
     {
         id: 2,
@@ -114,7 +114,7 @@ const faqData = [
         id: 3,
         question: "Can I change or cancel my order?",
         answer:
-            "Once an order is placed, we are unable to make changes or cancellations. You can return items for a refund within 30 days of delivery.",
+            "We do not offer order cancellation. Once an order is placed, it will be processed for delivery.",
     },
     {
         id: 4,

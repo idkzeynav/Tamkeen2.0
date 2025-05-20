@@ -23,6 +23,7 @@ const ProfileSidebar = ({ active, setActive }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProcurementOpen, setIsProcurementOpen] = useState(false); // State to manage Procurement menu toggle
   const [isPopupVisible, setIsPopupVisible] = useState(false); // For Procurement info popup
+
   const logoutHandler = () => {
     axios
       .get(`${server}/user/logout`, { withCredentials: true })
@@ -39,6 +40,7 @@ const ProfileSidebar = ({ active, setActive }) => {
   const togglePopup = () => {
     setIsPopupVisible((prev) => !prev);
   };
+
   return (
     <div className="flex">
       {/* Hamburger Button */}
@@ -71,19 +73,32 @@ const ProfileSidebar = ({ active, setActive }) => {
         >
           <HiOutlineShoppingBag size={20} color={active === 2 ? "red" : ""} />
           <span className={`pl-3 ${active === 2 ? "text-red-500" : ""} font-semibold`}>
-            Orders
+            Orders History
           </span>
         </div>
 
-        <div
+        {/* <div
           className="flex items-center cursor-pointer w-full mb-8"
-          onClick={() => setActive(4) || navigate("/inbox")}
+          onClick={() => setActive(4)} // Removed navigation to "/inbox"
         >
           <AiOutlineMessage size={20} color={active === 4 ? "red" : ""} />
           <span className={`pl-3 ${active === 4 ? "text-red-500" : ""} font-semibold`}>
             Inbox
           </span>
-        </div>
+        </div> */}
+        
+<div
+  className="flex items-center cursor-pointer w-full mb-8"
+  onClick={() => {
+    setActive(4);
+    // navigate('/inbox', { state: { fromProfile: true } });
+  }}
+>
+  <AiOutlineMessage size={20} color={active === 4 ? "red" : ""} />
+  <span className={`pl-3 ${active === 4 ? "text-red-500" : ""} font-semibold`}>
+    Inbox
+  </span>
+</div>
 
         <div
           className="flex items-center cursor-pointer w-full mb-8"
@@ -122,7 +137,7 @@ const ProfileSidebar = ({ active, setActive }) => {
         >
           <TbAddressBook size={20} color={active === 12 ? "red" : ""} />
           <span className={`pl-3 ${active === 12 ? "text-red-500" : ""} font-semibold`}>
-            My bookings 
+            Service bookings 
           </span>
         </div>
     {/* Procurement Menu */}

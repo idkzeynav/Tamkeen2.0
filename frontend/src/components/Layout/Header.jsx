@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import styles from "../../styles/styles";
 import {categoriesData } from "../../static/data";
@@ -6,20 +6,25 @@ import {
   AiOutlineHeart,
   AiOutlineSearch,
   AiOutlineShoppingCart,
+  AiOutlineCheckCircle,
 } from "react-icons/ai";
 import { IoIosArrowDown, IoIosArrowForward } from "react-icons/io";
 import { BiMenuAltLeft } from "react-icons/bi";
 import { CgProfile } from "react-icons/cg";
+import { FiLogOut, FiUser, FiLock } from "react-icons/fi"; // Added icons for dropdown
 import DropDown from "./DropDown";
 import Navbar from "./Navbar";
-import { useSelector } from "react-redux";
-import { backend_url } from "../../server";
+import { useSelector, useDispatch } from "react-redux"; // Added useDispatch
+import { backend_url, server } from "../../server";
 import Cart from "../cart/Cart";
 import Wishlist from "../Wishlist/Wishlist";
 import { RxCross1 } from "react-icons/rx";
+import axios from "axios"; // Added axios for the logout API call
+import { toast } from "react-toastify"; // Added toast for success notification
 
 const Header = ({ activeHeading }) => {
   const navigate = useNavigate(); // Initialize useNavigate
+  const dispatch = useDispatch(); // Initialize useDispatch
   const { isSeller } = useSelector((state) => state.seller);
   const { cart } = useSelector((state) => state.cart);
   const { wishlist } = useSelector((state) => state.wishlist);
@@ -33,6 +38,34 @@ const Header = ({ activeHeading }) => {
   const [openWishlist, setOpenWishlist] = useState(false);
   const [open, setOpen] = useState(false); // mobile menu
   const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [showProfileMenu, setShowProfileMenu] = useState(false); // New state for profile dropdown
+  const [showLogoutSuccess, setShowLogoutSuccess] = useState(false); // For custom logout success popup
+  
+  // Reference for handling clicks outside the dropdown
+  const profileDropdownRef = useRef(null);
+
+  // Handle logout with API call
+  const handleLogout = () => {
+    setIsLoading(true); // Show loading indicator
+    axios
+      .get(`${server}/user/logout`, { withCredentials: true })
+      .then((res) => {
+        // Show custom success popup instead of toast
+        setShowLogoutSuccess(true);
+        
+        // Hide the popup and redirect after 2 seconds
+        setTimeout(() => {
+          setShowLogoutSuccess(false);
+          navigate("/");
+          window.location.reload(true); // Reload to reset state
+        }, 2000);
+      })
+      .catch((error) => {
+        console.log(error.response?.data?.message || "Logout failed");
+        toast.error("Logout failed. Please try again.");
+        setIsLoading(false);
+      });
+  };
 
   // Handle search change
   const handleSearchChange = (e) => {
@@ -83,6 +116,25 @@ const Header = ({ activeHeading }) => {
     }
   };
 
+  // Handle profile menu toggle
+  const toggleProfileMenu = () => {
+    setShowProfileMenu(!showProfileMenu);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [profileDropdownRef]);
+
   // Clean up loading state if user navigates away
   useEffect(() => {
     return () => {
@@ -107,6 +159,25 @@ const Header = ({ activeHeading }) => {
             {/* Spinner using only Tailwind classes */}
             <div className="w-16 h-16 border-4 border-t-[#c8a4a5] border-r-[#c8a4a5] border-b-transparent border-l-transparent rounded-full animate-spin"></div>
             <p className="mt-4 text-[#5a4336] font-medium">Loading...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Beautiful Logout Success Popup */}
+      {showLogoutSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center transition-opacity duration-300 ease-in-out">
+          <div className="bg-white rounded-lg shadow-2xl p-6 transform transition-all duration-300 ease-in-out scale-100 opacity-100 max-w-sm w-full mx-4">
+            <div className="flex flex-col items-center text-center">
+              <div className="rounded-full bg-green-100 p-3 mb-4">
+                <AiOutlineCheckCircle className="text-green-500 text-4xl" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Logout Successful!</h2>
+              <p className="text-gray-600 mb-4">You have been successfully logged out of your account.</p>
+              <div className="w-full bg-gray-200 h-1 rounded-full overflow-hidden">
+                <div className="bg-[#c8a4a5] h-1 rounded-full animate-logout-progress"></div>
+              </div>
+              <p className="text-gray-500 text-sm mt-3">Redirecting to homepage...</p>
+            </div>
           </div>
         </div>
       )}
@@ -254,17 +325,39 @@ text-[12px] leading-tight text-center">
               </div>
             </div>
 
-            {/* avatar */}
-            <div className={`${styles.noramlFlex}`}>
+            {/* Profile Avatar with Dropdown */}
+            <div className={`${styles.noramlFlex}`} ref={profileDropdownRef}>
               <div className="relative cursor-pointer mr-[15px]">
                 {isAuthenticated ? (
-                  <Link to="/profile">
+                  <div onClick={toggleProfileMenu}>
                     <img
                       src={`${backend_url}${user.avatar}`}
                       className="w-[35px] h-[35px] rounded-full"
-                      alt=""
+                      alt="User Avatar"
                     />
-                  </Link>
+                    
+                    {/* Profile Dropdown Menu */}
+                    {showProfileMenu && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                        <Link 
+                          to="/profile" 
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <FiUser className="mr-2 text-[#5a4336]" />
+                          <span>Profile</span>
+                        </Link>
+                        
+                        <div className="border-t border-gray-100"></div>
+                        <button 
+                          onClick={handleLogout}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                        >
+                          <FiLogOut className="mr-2 text-[#5a4336]" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <Link to="/login">
                     <CgProfile size={30} color="rgb(255 255 255 / 83%)" />
@@ -273,6 +366,7 @@ text-[12px] leading-tight text-center">
               </div>
             </div>
             {/* Avatar end */}
+            
             {/* card  popup start */}
             {openCart ? <Cart setOpenCart={setOpenCart} /> : null}
             {/* card popup end */}
@@ -415,14 +509,47 @@ text-[12px]  leading-tight text-center">
             {/* Mob Login */}
             <div className="flex w-full justify-center">
               {isAuthenticated ? (
-                <div>
-                  <Link to="/profile">
+                <div className="relative" ref={profileDropdownRef}>
+                  <div onClick={toggleProfileMenu}>
                     <img
                       src={`${backend_url}${user.avatar}`}
                       alt="Profile img"
-                      className="w-[35px] h-[35px] rounded-full class=text-[#5a4336]"
+                      className="w-[35px] h-[35px] rounded-full"
                     />
-                  </Link>
+                  </div>
+                  
+                  {/* Mobile profile dropdown */}
+                  {showProfileMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                      <Link 
+                        to="/profile" 
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setOpen(false)}
+                      >
+                        <FiUser className="mr-2 text-[#5a4336]" />
+                        <span>Profile</span>
+                      </Link>
+                      <Link 
+                        to="/change-password" 
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setOpen(false)}
+                      >
+                        <FiLock className="mr-2 text-[#5a4336]" />
+                        <span>Change Password</span>
+                      </Link>
+                      <div className="border-t border-gray-100"></div>
+                      <button 
+                        onClick={() => {
+                          handleLogout();
+                          setOpen(false);
+                        }}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        <FiLogOut className="mr-2 text-[#5a4336]" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>

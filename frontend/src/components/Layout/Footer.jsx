@@ -29,7 +29,7 @@ const Footer = () => {
                     {footerProductLinks.map((link, index) => (
                         <li key={index}>
                             <Link
-                                className="text-[#4a4a4a] hover:text-[#d3a17e] duration-300 text-sm leading-6"
+                                className="text-[#4a4a4a] hover:text-[#d3a17e] duration-300 text-base leading-7"
                                 to={link.link}
                             >
                                 {link.name}
@@ -39,11 +39,11 @@ const Footer = () => {
                 </ul>
 
                 <ul className="flex flex-col items-center sm:items-start">
-                    <h1 className="text-lg font-serif font-semibold text-[#4a4a4a] mb-2">Shop</h1>
+                    <h1 className="text-xl font-serif font-semibold text-[#4a4a4a] mb-3">Shop</h1>
                     {footercompanyLinks.map((link, index) => (
                         <li key={index}>
                             <Link
-                                className="text-[#4a4a4a] hover:text-[#d3a17e] duration-300 text-sm leading-6"
+                                className="text-[#4a4a4a] hover:text-[#d3a17e] duration-300 text-base leading-7"
                                 to={link.link}
                             >
                                 {link.name}
@@ -51,13 +51,13 @@ const Footer = () => {
                         </li>
                     ))}
                 </ul>
-            
+           
                 <ul className="flex flex-col items-center sm:items-start">
-                    <h1 className="text-lg font-serif font-semibold text-[#4a4a4a] mb-2">Support</h1>
+                    <h1 className="text-xl font-serif font-semibold text-[#4a4a4a] mb-3">Support</h1>
                     {footerSupportLinks.map((link, index) => (
                         <li key={index}>
                             <Link
-                                className="text-[#4a4a4a] hover:text-[#d3a17e] duration-300 text-sm leading-6"
+                                className="text-[#4a4a4a] hover:text-[#d3a17e] duration-300 text-base leading-7"
                                 to={link.link}
                             >
                                 {link.name}
@@ -67,7 +67,7 @@ const Footer = () => {
                 </ul>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-left px-8 py-4 bg-[#c8a4a5] text-[#4a4a4a] text-sm">
+           <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-left px-8 py-4 bg-[#c8a4a5] text-[#4a4a4a] text-sm">
                 <span>© 2024 Tamkeen. All rights reserved.</span>
                 <span className="sm:mt-0 mt-2">Terms · Privacy Policy</span>
                 <div className="flex space-x-4 mt-4 sm:mt-0">

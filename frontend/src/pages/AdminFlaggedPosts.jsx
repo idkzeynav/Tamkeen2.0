@@ -52,15 +52,25 @@ const AdminFlaggedPosts = () => {
     setPostDetailsOpen(true);
   };
 
+  // const formatDate = (dateString) => {
+  //   return new Date(dateString).toLocaleString('en-US', {
+  //     year: 'numeric',
+  //     month: 'short',
+  //     day: 'numeric',
+  //     hour: '2-digit',
+  //     minute: '2-digit',
+  //   });
+  // };
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const date = new Date(dateString);
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
   const handleApprovePost = async (postId) => {
     try {
@@ -154,8 +164,8 @@ const AdminFlaggedPosts = () => {
                         Reported by: {flag.userId?.name || 'Anonymous User'}
                       </p>
                       <p className="text-sm text-gray-600 mb-2">
-                        {formatDate(flag.createdAt)}
-                      </p>
+  {formatDate(flag.flaggedAt)}  {/* Changed from flag.createdAt */}
+</p>
                       <p className="italic" style={{ color: colors.dark }}>
                         "{flag.reason}"
                       </p>
@@ -247,39 +257,41 @@ const AdminFlaggedPosts = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {flaggedPosts.map((post) => (
-                  <tr key={post._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium" style={{ color: colors.dark }}>
-                        {post.title.length > 50 ? post.title.substring(0, 50) + '...' : post.title}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm" style={{ color: colors.dark }}>{post.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm" style={{ color: colors.dark }}>
-                        {post.flags ? post.flags.length : 1} {post.flags && post.flags.length === 1 ? 'flag' : 'flags'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {formatDate(post.flags && post.flags[0] ? post.flags[0].createdAt : post.updatedAt)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => handleViewDetails(post)}
-                        className="px-3 py-1 rounded text-white transition-colors mr-2"
-                        style={{ backgroundColor: colors.primary }}
-                      >
-                        Review
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+             <tbody className="bg-white divide-y divide-gray-200">
+  {flaggedPosts.map((post) => (
+    <tr key={post._id} className="hover:bg-gray-50">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm font-medium" style={{ color: colors.dark }}>
+          {post.title.length > 50 ? post.title.substring(0, 50) + '...' : post.title}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm" style={{ color: colors.dark }}>{post.name}</div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm" style={{ color: colors.dark }}>
+          {post.flags ? post.flags.length : 1} {post.flags && post.flags.length === 1 ? 'flag' : 'flags'}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-500">
+          {post.flags && post.flags[0] ? 
+            formatDate(post.flags[0].flaggedAt) : 
+            formatDate(post.updatedAt)}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm">
+        <button
+          onClick={() => handleViewDetails(post)}
+          className="px-3 py-1 rounded text-white transition-colors mr-2"
+          style={{ backgroundColor: colors.primary }}
+        >
+          Review
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
             </table>
           </div>
         )}

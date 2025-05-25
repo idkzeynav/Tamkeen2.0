@@ -75,6 +75,23 @@ const productSchema = new mongoose.Schema({
     type: Date,
     default: Date.now(),
   },
+  universalId: {
+    type: String,
+    unique: true,
+    index: true
+  }
+}, { timestamps: true });
+
+// Pre-save hook to generate universal ID
+productSchema.pre('save', async function() {
+  if (!this.universalId) {
+    const date = new Date();
+    const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+    const count = await this.constructor.countDocuments();
+    
+    // Generate universal ID (e.g., "PROD-20240521-0042")
+    this.universalId = `PROD-${dateStr}-${(count + 1).toString().padStart(4, '0')}`;
+  }
 });
 
 module.exports = mongoose.model("Product", productSchema);

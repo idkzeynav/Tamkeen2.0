@@ -181,7 +181,10 @@ router.get(
       });
       res.status(201).json({
         success: true,
-        products,
+        products: products.map(p => ({
+          ...p.toObject(),
+          displayId: p.universalId
+        })),
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));

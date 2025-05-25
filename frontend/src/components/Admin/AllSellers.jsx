@@ -48,7 +48,12 @@ const AllSellers = () => {
   };
 
   const columns = [
-    { field: "id", headerName: "Seller ID", minWidth: 150, flex: 0.7 },
+    { field: "id", headerName: "Seller ID", minWidth: 200, flex: 0.8,renderCell: (params) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{params.row.universalId}</span>
+        
+        </div>
+      ) },
     {
       field: "name",
       headerName: "Name",
@@ -119,6 +124,7 @@ const AllSellers = () => {
     sellers.forEach((item) => {
       row.push({
         id: item._id,
+        universalId: item.universalId || item._id, // Fallback to _id if universalId not set
         name: item?.name,
         email: item?.email,
         joinedAt: item.createdAt.slice(0, 10),

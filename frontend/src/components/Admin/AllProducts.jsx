@@ -23,7 +23,11 @@ const AllProducts = () => {
   }, []);
 
   const columns = [
-    { field: "id", headerName: "Product Id", minWidth: 150, flex: 0.7 },
+    { field: "id", headerName: "Product Id", minWidth: 200, flex: 0.8, renderCell: (params) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{params.row.universalId}</span>
+        </div>
+      ) },
     {
       field: "name",
       headerName: "Name",
@@ -78,6 +82,7 @@ const AllProducts = () => {
     data.forEach((item) => {
       row.push({
         id: item._id,
+        universalId: item.universalId || item._id,
         name: item.name,
         price: "Rs" + item.originalPrice,
         Stock: item.stock,

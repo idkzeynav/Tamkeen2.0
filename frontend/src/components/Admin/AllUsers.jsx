@@ -55,7 +55,12 @@ const AllUsers = () => {
   };
 
   const columns = [
-    { field: "id", headerName: "User ID", minWidth: 150, flex: 0.7 },
+    { field: "id", headerName: "User ID", minWidth: 200, flex: 0.8,renderCell: (params) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{params.row.universalId}</span>
+          {/* <span className="text-xs text-gray-500">DB: {params.value.substring(0, 8)}...</span> */}
+        </div>
+      ) },
     {
       field: "name",
       headerName: "Name",
@@ -113,6 +118,7 @@ const AllUsers = () => {
     users && users.length > 0
       ? users.map((user) => ({
           id: user._id,
+          universalId: user.universalId || user._id, // Fallback to _id if universalId not set
           name: user.name,
           email: user.email,
           role: user.role,

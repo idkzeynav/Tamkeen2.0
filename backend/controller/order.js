@@ -211,7 +211,10 @@ router.get(
 
       res.status(200).json({
         success: true,
-        orders,
+        orders: orders.map(order => ({
+          ...order.toObject(),
+          displayId: order.shortId // or universalId based on your preference
+        }))
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));

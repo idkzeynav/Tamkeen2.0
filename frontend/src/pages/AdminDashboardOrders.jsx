@@ -22,10 +22,11 @@ const AdminDashboardOrders = () => {
       headerName: "Order ID",
       minWidth: 150,
       flex: 0.8,
-      renderCell: (params) => (
-        <span className="text-[#5a4336] font-medium break-words">
-          {params.value}
-        </span>
+    renderCell: (params) => (
+      <div className="flex flex-col">
+        <span className="text-[#5a4336] font-medium">{params.row.universalId}</span>
+        {/* <span className="text-xs text-gray-500">DB: {params.value.substring(0, 8)}...</span> */}
+      </div>
       ),
     },
     {
@@ -106,6 +107,8 @@ const AdminDashboardOrders = () => {
     
     return {
       id: item._id,
+      universalId: item.universalId,
+      shortId: item.shortId,
       customerName: item.user?.email || "Unknown Customer",
       shopName: shopName,
       itemsQty: item.cart.reduce((acc, cartItem) => acc + cartItem.qty, 0),

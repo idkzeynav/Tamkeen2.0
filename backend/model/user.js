@@ -63,6 +63,23 @@ const userSchema = new mongoose.Schema({
   },
   resetPasswordToken: String,
   resetPasswordTime: Date,
+  universalId: {
+    type: String,
+    unique: true,
+    index: true
+  }
+}, { timestamps: true });
+
+// Pre-save hook to generate universal ID
+userSchema.pre('save', async function() {
+  if (!this.universalId) {
+    const date = new Date();
+    const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+    const count = await this.constructor.countDocuments();
+    
+    // Generate universal ID (e.g., "USER-20240521-0042")
+    this.universalId = `USER-${dateStr}-${(count + 1).toString().padStart(4, '0')}`;
+  }
 });
 
 

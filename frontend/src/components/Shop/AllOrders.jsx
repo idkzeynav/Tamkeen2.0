@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import Loader from "../Layout/Loader";
 import { getAllOrdersOfShop } from "../../redux/actions/order";
-import { AiOutlineArrowRight } from "react-icons/ai";
+import { AiOutlineArrowRight, AiOutlineDownload } from "react-icons/ai";
+import ExportOrdersButton from '../../components/ui/ExportOrdersButton';
 
 const AllOrders = () => {
   const { orders, isLoading } = useSelector((state) => state.order);
@@ -23,6 +24,11 @@ const AllOrders = () => {
       minWidth: 150,
       flex: 0.7,
       headerClassName: "header-theme",
+      renderCell: (params) => (
+      <span className="text-[#5a4336] font-medium">
+        {params.row.displayId || params.row.shortId}
+      </span>
+    ),
     },
     {
       field: "status",
@@ -59,10 +65,9 @@ const AllOrders = () => {
       sortable: false,
       renderCell: (params) => (
         <Link to={`/order/${params.id}`}>
-        <Button className="bg-[#f4eceb] text-white p-3 rounded-full shadow-lg hover:scale-105 transform transition duration-300 !bg-[#f4eceb]">
-  <AiOutlineArrowRight size={20} />
-</Button>
-
+          <Button className="bg-[#f4eceb] text-white p-3 rounded-full shadow-lg hover:scale-105 transform transition duration-300 !bg-[#f4eceb]">
+            <AiOutlineArrowRight size={20} />
+          </Button>
         </Link>
       ),
     },
@@ -74,6 +79,7 @@ const AllOrders = () => {
     orders.forEach((item) => {
       rows.push({
         id: item._id,
+         displayId: item.shortId,
         itemsQty: item.cart.length,
         total: "Rs " + item.totalPrice,
         status: item.status,
@@ -87,9 +93,14 @@ const AllOrders = () => {
       ) : (
         <div className="w-full min-h-screen bg-gray-100 flex justify-center items-start py-10">
           <div className="w-full max-w-6xl bg-[#c8a4a5] backdrop-blur-md rounded-2xl shadow-2xl p-10 transform hover:scale-105 transition-transform duration-500">
-            <h1 className="text-2xl font-semibold text-[#5a4336] mb-8 text-center">
-              All Orders
-            </h1>
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-2xl font-semibold text-[#5a4336]">
+                All Orders
+              </h1>
+              {orders && orders.length > 0 && (
+                <ExportOrdersButton orders={orders} />
+              )}
+            </div>
             <DataGrid
               rows={rows}
               columns={columns}

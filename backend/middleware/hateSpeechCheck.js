@@ -1,36 +1,3 @@
-// const axios = require('axios');
-//https://api-inference.huggingface.co/models/unitary/toxic-bert
-// const HUGGINGFACE_API_TOKEN = process.env.HF_API_TOKEN; // Store in .env
-
-// const hateSpeechCheck = async (req, res, next) => {
-//   const { content } = req.body;
-
-//   if (!content) return res.status(400).json({ error: 'Content is required for hate speech detection.' });
-
-//   try {
-//     const response = await axios.post(
-//       'https://api-inference.huggingface.co/models/Hate-speech-CNERG/dehatebert-mono-english',
-//       { inputs: content },
-//       {
-//         headers: {
-//           Authorization: `Bearer ${HUGGINGFACE_API_TOKEN}`,
-//         },
-//       }
-//     );
-
-//     const label = response?.data?.[0]?.label || "non-hateful";
-
-//     if (label.toLowerCase().includes("hateful")) {
-//       return res.status(403).json({ error: 'Post/reply rejected due to hate speech.' });
-//     }
-
-//     next();
-//   } catch (err) {
-//     console.error("Hate speech detection failed:", err.message);
-//     return res.status(500).json({ error: "Error validating content." });
-//   }
-// };
-
 // module.exports = hateSpeechCheck;
 const { InferenceClient } = require('@huggingface/inference');
 

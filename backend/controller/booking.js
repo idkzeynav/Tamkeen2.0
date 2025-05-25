@@ -6,15 +6,22 @@ const Service = require("../model/services");
 const Shop = require("../model/shop");
 const router = express.Router();
 const sendMail = require('../utils/sendMail');
+
 // Create a new booking
 router.post(
   "/create-booking",
-
   catchAsyncErrors(async (req, res, next) => {
-    const { serviceId, userId,dates } = req.body;
-   
+    const { 
+      serviceId, 
+      userId, 
+      dates, // For backward compatibility
+      specificDates, 
+      isRecurring, 
+      recurringDetails 
+    } = req.body;
     
-console.log(userId);
+    console.log(userId);
+    
     // Find the service
     const service = await Service.findById(serviceId);
     if (!service) {
@@ -23,22 +30,82 @@ console.log(userId);
 
     const sellerId = service.shopId;
 
-    // Create booking
-    const booking = await Booking.create({
+    // Create booking - support both old format and new format
+    const bookingData = {
       serviceId,
       sellerId,
       userId,
-      dates,
-    });
- // Notify the seller via email
- const shop = await Shop.findById(sellerId); // Fetch the shop details
-if (shop && shop.email) {
+      dates: dates || [], // Keep backward compatibility
+    };
+
+    // Add specific dates for one-time bookings
+    if (specificDates && specificDates.length > 0) {
+      bookingData.specificDates = specificDates;
+    }
+
+    // Add recurring details if it's a recurring booking
+    if (isRecurring) {
+      bookingData.isRecurring = true;
+      bookingData.recurringDetails = recurringDetails;
+    }
+
+    const booking = await Booking.create(bookingData);
+
+    // Prepare booking details for email notification
+    let bookingDetailsText = '';
+    let bookingDetailsHTML = '';
+    
+    if (isRecurring) {
+      const days = recurringDetails.days.join(", ");
+      bookingDetailsText = `
+        Recurring booking:
+        - Days: ${days}
+        - From ${recurringDetails.startDate} to ${recurringDetails.endDate || `for ${recurringDetails.weekCount} weeks`}
+      `;
+      
+      bookingDetailsHTML = `<p><strong>Recurring Booking:</strong></p>
+        <p>Days: ${days}</p>
+        <p>Duration: From ${new Date(recurringDetails.startDate).toLocaleDateString()} 
+           to ${recurringDetails.endDate ? new Date(recurringDetails.endDate).toLocaleDateString() : 
+           `for ${recurringDetails.weekCount} weeks`}</p>`;
+           
+      // Add time slots if available
+      if (recurringDetails.timeSlots && Object.keys(recurringDetails.timeSlots).length > 0) {
+        bookingDetailsHTML += '<p><strong>Time Slots:</strong></p><ul>';
+        Object.entries(recurringDetails.timeSlots).forEach(([day, times]) => {
+          bookingDetailsHTML += `<li>${day}: ${times.startTime} - ${times.endTime}</li>`;
+        });
+        bookingDetailsHTML += '</ul>';
+      }
+    } else if (specificDates && specificDates.length > 0) {
+      bookingDetailsText = `
+        Specific date booking:
+        ${specificDates.map(date => `- ${new Date(date.date).toLocaleDateString()}: ${date.startTime} - ${date.endTime}`).join('\n')}
+      `;
+      
+      bookingDetailsHTML = `<p><strong>Specific Date Booking:</strong></p><ul>
+        ${specificDates.map(date => `<li>${new Date(date.date).toLocaleDateString()}: ${date.startTime} - ${date.endTime}</li>`).join('')}
+      </ul>`;
+    } else if (dates && dates.length > 0) {
+      // Legacy format
+      bookingDetailsText = `
+        Dates: ${dates.map(date => `${date.day} (${date.timeSlot.startTime} - ${date.timeSlot.endTime})`).join(', ')}
+      `;
+      
+      bookingDetailsHTML = `<p><strong>Booking Dates:</strong></p><ul>
+        ${dates.map(date => `<li>${date.day}: ${date.timeSlot.startTime} - ${date.timeSlot.endTime}</li>`).join('')}
+      </ul>`;
+    }
+
+    // Notify the seller via email
+    const shop = await Shop.findById(sellerId); // Fetch the shop details
+    if (shop && shop.email) {
       const sellerMessage = `
       Dear ${shop.name},
       
       A new booking has been made for your service:
       - Service Name: ${service.name}
-      - Dates: ${dates.join(", ")} (if multiple dates are supported)
+      ${bookingDetailsText}
       - Booked By User ID: ${userId}
       
       Please review the booking in your dashboard and take necessary actions.
@@ -77,7 +144,7 @@ if (shop && shop.email) {
         <h4 style="color: #5a4336; margin-top: 0; font-size: 18px; border-bottom: 1px solid #e6d8d8; padding-bottom: 10px;">Service Details:</h4>
         <div style="font-size: 15px; line-height: 1.5; color: #5a4336;">
           <p style="margin: 5px 0;"><strong>Service Name:</strong> ${service.name}</p>
-          <p style="margin: 5px 0;"><strong>Booked Dates:</strong> ${dates.join(", ")}</p>
+          ${bookingDetailsHTML}
           <p style="margin: 5px 0;"><strong>User ID:</strong> ${userId}</p>
         </div>
       </div>
@@ -99,7 +166,7 @@ if (shop && shop.email) {
       <ul style="font-size: 16px; line-height: 1.6; color: #5a4336; padding-left: 20px;">
         <li>Log in to your dashboard to confirm this booking</li>
         <li>Contact the customer if you need additional information</li>
-        <li>Update the booking status when the service is completed</li>
+     
       </ul>
     </div>
     
@@ -128,9 +195,10 @@ if (shop && shop.email) {
       } catch (error) {
         console.error(`Error sending notification email to seller: ${error.message}`);
       }
- } else {
-   console.warn(`No email defined for the seller's shop with ID: ${sellerId}`);
- }
+    } else {
+      console.warn(`No email defined for the seller's shop with ID: ${sellerId}`);
+    }
+    
     res.status(201).json({
       success: true,
       booking,
@@ -141,27 +209,26 @@ if (shop && shop.email) {
 // Get all bookings for a seller
 router.get(
   "/seller-bookings/:sellerId",
-
   catchAsyncErrors(async (req, res, next) => {
     const { sellerId } = req.params;
     const bookings = await Booking.find({ sellerId }).populate("serviceId userId");
     res.status(200).json({ success: true, bookings });
   })
 );
+
 // Get all bookings for a user
 router.get(
   "/user-bookings/:userId",
-  
   catchAsyncErrors(async (req, res, next) => {
     const { userId } = req.params;
     const bookings = await Booking.find({ userId }).populate("serviceId sellerId");
     res.status(200).json({ success: true, bookings });
   })
 );
+
 // Update booking status to 'confirmed'
 router.put(
   "/confirm-booking/:bookingId",
- // Seller should be authenticated
   catchAsyncErrors(async (req, res, next) => {
     const { bookingId } = req.params;
     const booking = await Booking.findById(bookingId);
@@ -169,11 +236,6 @@ router.put(
     if (!booking) {
       return res.status(404).json({ success: false, message: "Booking not found" });
     }
-
-    // Ensure only the seller of the service can confirm the booking
-   
-
-    
 
     // Update booking status to confirmed
     booking.status = "confirmed";
@@ -183,5 +245,49 @@ router.put(
   })
 );
 
+// Add a new route for rejecting bookings
+router.put(
+  "/reject-booking/:bookingId",
+  catchAsyncErrors(async (req, res, next) => {
+    const { bookingId } = req.params;
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    booking.status = "rejected";
+    await booking.save();
+
+    res.status(200).json({ success: true, message: "Booking rejected successfully", booking });
+  })
+);
+
+
+// Add this to your booking routes file (paste-2.txt)
+router.put(
+  "/cancel-booking/:bookingId",
+  catchAsyncErrors(async (req, res, next) => {
+    const { bookingId } = req.params;
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    // Check if booking is in pending state
+    if (booking.status !== "pending") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Only pending bookings can be canceled by the user" 
+      });
+    }
+
+    booking.status = "canceled";
+    await booking.save();
+
+    res.status(200).json({ success: true, message: "Booking canceled successfully", booking });
+  })
+);
 
 module.exports = router;

@@ -520,12 +520,12 @@ router.get(
       const search = req.query.search || "";
       
       // Create a search query that works with single characters
-      const searchQuery = search 
+     const searchQuery = search 
         ? {
             $or: [
-              // Use regex that matches any part of the string, even single chars
               { name: { $regex: `^${search}`, $options: "i" } },
-              { email: { $regex: `^${search}`, $options: "i" } }
+              { email: { $regex: `^${search}`, $options: "i" } },
+              { universalId: { $regex: `^${search}`, $options: "i" } } // Add search by universalId
             ]
           } 
         : {};
@@ -536,7 +536,10 @@ router.get(
       
       res.status(201).json({
         success: true,
-        users,
+       users: users.map(u => ({
+          ...u.toObject(),
+          displayId: u.universalId
+        })),
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));

@@ -395,7 +395,8 @@ router.get(
         ? {
             $or: [
               { name: { $regex: `^${search}`, $options: "i" } },
-              { email: { $regex: `^${search}`, $options: "i" } }
+              { email: { $regex: `^${search}`, $options: "i" } },
+               { universalId: { $regex: `^${search}`, $options: "i" } } // Add search by universalId
             ]
           } 
         : {};
@@ -406,7 +407,10 @@ router.get(
       
       res.status(201).json({
         success: true,
-        sellers,
+        sellers: sellers.map(s => ({
+          ...s.toObject(),
+          displayId: s.universalId
+        })),
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));

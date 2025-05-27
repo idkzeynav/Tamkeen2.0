@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useSpring, animated } from 'react-spring';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import { server } from '../../server';
 import { toast } from 'react-toastify';
+import { jwtDecode } from 'jwt-decode';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -50,6 +51,33 @@ const Login = () => {
     }
   };
 
+useEffect(() => {
+  const handleToken = () => {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const token = params.get('token');
+
+    if (token) {
+      // Store token in both cookie and localStorage
+      document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 1 week
+      localStorage.setItem('token', token);
+      
+      // Clear URL hash without reload
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Redirect to home/dashboard
+      const user = jwtDecode(token);
+      if (user.role === 'Admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+      }
+    }
+  };
+
+  handleToken();
+}, [navigate]);
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#d8c4b8] via-[#c8a4a5] to-[#a67d6d] p-4 overflow-hidden relative">
       {/* Animated Background Elements */}
@@ -64,13 +92,11 @@ const Login = () => {
       </div>
 
       <animated.div style={cardAnimation} className="w-full max-w-md relative z-10">
-
         <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl p-8 relative overflow-hidden">
           {/* Simple centered تمكين without rotation or circle */}
           <div className="flex justify-center mb-8">
             <span className="text-[#5a4336] text-4xl font-bold">تمكين</span>
           </div>
-
 
           <animated.form style={formAnimation} onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input with floating label effect */}
@@ -133,6 +159,32 @@ const Login = () => {
                 "Sign in"
               )}
             </button>
+
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">or continue with</span>
+              </div>
+            </div>
+
+            {/* Google Sign-in Button - Now properly placed inside the form */}
+            <button
+              type="button"
+              onClick={() => window.location.href = `${server}/user/auth/google`}
+              className="w-full py-3 px-4 bg-white border-2 border-gray-200 text-gray-700 font-medium rounded-lg 
+                        hover:bg-gray-50 hover:border-[#a67d6d] transition-all duration-300 flex items-center justify-center
+                        transform hover:scale-105 hover:shadow-lg"
+            >
+              <img 
+                src="https://img.icons8.com/color/24/000000/google-logo.png" 
+                alt="Google" 
+                className="w-5 h-5 mr-2"
+              />
+              Continue with Google
+            </button>
           </animated.form>
 
           <div className="mt-8 text-center">
@@ -144,16 +196,15 @@ const Login = () => {
               Create an account
             </Link>
             <div className="mt-4 text-center">
-    <Link 
-      to="/forgot-password/user"
-      className="text-sm text-[#a67d6d] hover:text-[#5a4336] font-medium transition-colors duration-300 hover:underline link-shine"
-    >
-      Forgot password?
-    </Link>
-  </div>
-    </div>
-    </div>
-              
+              <Link 
+                to="/forgot-password/user"
+                className="text-sm text-[#a67d6d] hover:text-[#5a4336] font-medium transition-colors duration-300 hover:underline link-shine"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          </div>
+        </div>
       </animated.div>
 
       <style jsx>{`

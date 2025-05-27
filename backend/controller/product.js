@@ -22,7 +22,8 @@ router.post(
         return next(new ErrorHandler("Shop Id is invalid!", 400));
       } else {
         const files = req.files;
-        const imageUrls = files.map((file) => `${file.filename}`);
+        // Store full URL paths instead of just filenames
+        const imageUrls = files.map((file) => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
 
         const productData = req.body;
         productData.images = imageUrls;
@@ -68,8 +69,9 @@ router.delete(
 
       const productData = await Product.findById(productId);
 
+      // Extract filename from URL for deletion
       productData.images.forEach((imageUrl) => {
-        const filename = imageUrl;
+        const filename = imageUrl.split('/').pop(); // Get filename from URL
         const filePath = `uploads/${filename}`;
 
         fs.unlink(filePath, (err) => {
@@ -212,7 +214,8 @@ router.put(
       // Handle image uploads
       const files = req.files;
       if (files && files.length > 0) {
-        const imageUrls = files.map((file) => `${file.filename}`);
+        // Store full URL paths for new images
+        const imageUrls = files.map((file) => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
         productData.images = imageUrls; // Update images only if new ones are uploaded
       } else {
         // Keep existing images if no new images are uploaded
@@ -232,6 +235,5 @@ router.put(
     }
   })
 );
-
 
 module.exports = router;

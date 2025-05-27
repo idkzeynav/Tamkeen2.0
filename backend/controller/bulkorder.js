@@ -7,174 +7,179 @@ const catchAsyncErrors = require('../middleware/catchAsyncErrors');
 const { upload } = require('../middleware/multer'); // Import multer middleware for image uploads
 const RFQ = require('../model/rfq'); // Import the RFQ model
 const sendMail = require('../utils/sendMail');
+const validateRequest = require('../middleware/validateMiddleware');
+const { bulkOrderSchema } = require('../utils/bulkOrderValidations');
 
 // Create bulk order and generate RFQ
-router.post("/create",upload.single("inspoPic"), catchAsyncErrors(async (req, res, next) => {
-  const { userId, productName, description, quantity, category, budget, deliveryDeadline, shippingAddress, packagingRequirements, supplierLocationPreference} = req.body;
+router.post(
+  "/create",
+  upload.single("inspoPic"),
+  validateRequest(bulkOrderSchema), // Add validation middleware
+  catchAsyncErrors(async (req, res, next) => {
+    const {
+      userId,
+      productName,
+      description,
+      quantity,
+      category,
+      budget,
+      deliveryDeadline,
+      shippingAddress,
+      packagingRequirements,
+      supplierLocationPreference
+    } = req.body;
 
-  // Check if userId is provided
-  if (!userId) {
-    return res.status(400).json({ success: false, message: 'User ID is required to create a bulk order.' });
-  }
-  const inspoPic = req.file ? req.file.filename : '';
+    const inspoPic = req.file ? req.file.filename : '';
 
-  // Save the bulk order request
-  const bulkOrder = await BulkOrder.create({
-    userId,
-    productName,
-    description,
-    quantity,
-    category,
-    inspoPic,
-    budget,
-    deliveryDeadline,
-    shippingAddress,
-    packagingRequirements,
-    supplierLocationPreference,
-
-  });
-
-  // Find all products with the specified category
-  const products = await Product.find({ category });
-
-  // Extract unique shop IDs from the products
-  const uniqueShopIds = [...new Set(products.map(product => product.shopId))];
-
-  // Find all shops that match these shop IDs
-  const relevantShops = await Shop.find({ _id: { $in: uniqueShopIds } });
-
-  // Generate and send RFQ to relevant shops
-
-   // Generate and send RFQ to relevant shops
-   const rfqs = [];
-   for (const shop of relevantShops) {
-     console.log(`Sending RFQ to Shop: ${shop.name}`);
-     
-     const rfq = await RFQ.create({
-       bulkOrderId: bulkOrder._id,
-       shopId: shop._id,
-       userId: bulkOrder.userId,
-     });
-
-
-  if (rfq.price !== null && rfq.price !== undefined) {
-    rfqs.push(rfq); // Only add valid RFQs
-// Ensure shop email exists
-if (shop.email) {
-  const message = `A new bulk order has been created for your product category. Please review the RFQ and submit your offer. 
-  Product Name: ${productName}
-  Quantity: ${quantity}
-  Budget: ${budget}
-  Delivery Deadline: ${deliveryDeadline}`;
-
-  const htmlMessage = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Bulk Order Request</title>
-</head>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background-color: #faf7f7; color: #5a4336;">
-  <!-- Header with logo area and gradient background -->
-  <div style="background-image: linear-gradient(135deg, #c8a4a5 0%, #d48c8f 100%); padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="color: #ffffff; margin: 0; font-size: 28px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">New Bulk Order Request</h1>
-  </div>
-  
-  <!-- Main content area with card gradient effect -->
-  <div style="padding: 35px 25px; border-left: 1px solid #e6d8d8; border-right: 1px solid #e6d8d8; border-bottom: 1px solid #e6d8d8; background-image: linear-gradient(to bottom, #ffffff, #f5f0f0); border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <h2 style="color: #c8a4a5; margin-top: 0; font-size: 24px;">New Bulk Order Opportunity!</h2>
-    
-    <p style="font-size: 16px; line-height: 1.6; color: #5a4336;">Hello,</p>
-    
-    <p style="font-size: 16px; line-height: 1.6; color: #5a4336;">A new bulk order has been created for your product category. Please review the details below and submit your offer if you're interested.</p>
-    
-    <!-- Order details section -->
-    <div style="margin: 30px 0; padding: 25px; border-radius: 8px; background-image: linear-gradient(to right, #f5f0f0, #e6d8d8);">
-      <h3 style="color: #c8a4a5; margin-top: 0; font-size: 20px;">Bulk Order Details</h3>
-      
-      <div style="background-color: #ffffff; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
-        <p style="font-size: 16px; line-height: 1.5; color: #5a4336; margin: 5px 0;">
-          <strong style="color: #c8a4a5;">Product Name:</strong> ${productName}
-        </p>
-      </div>
-      
-      <div style="background-color: #ffffff; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
-        <p style="font-size: 16px; line-height: 1.5; color: #5a4336; margin: 5px 0;">
-          <strong style="color: #c8a4a5;">Quantity:</strong> ${quantity}
-        </p>
-      </div>
-      
-      <div style="background-color: #ffffff; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
-        <p style="font-size: 16px; line-height: 1.5; color: #5a4336; margin: 5px 0;">
-          <strong style="color: #c8a4a5;">Budget:</strong> ${budget}
-        </p>
-      </div>
-      
-      <div style="background-color: #ffffff; border-radius: 6px; padding: 15px;">
-        <p style="font-size: 16px; line-height: 1.5; color: #5a4336; margin: 5px 0;">
-          <strong style="color: #c8a4a5;">Delivery Deadline:</strong> ${deliveryDeadline}
-        </p>
-      </div>
-    </div>
-    
-    <!-- Next steps section -->
-    <div style="margin: 30px 0; padding: 20px; border-radius: 6px; background-color: #f5f0f0; border-left: 4px solid #d48c8f;">
-      <h3 style="color: #c8a4a5; margin-top: 0; font-size: 18px;">What's Next?</h3>
-      <ul style="font-size: 16px; line-height: 1.6; color: #5a4336; padding-left: 20px;">
-        <li>Login to your seller dashboard to view the complete RFQ details</li>
-        <li>Submit your best offer with competitive pricing and terms</li>
-        <li>Specify your delivery timeline and any special conditions</li>
-      </ul>
-    </div>
-    
-    <div style="text-align: center; margin-top: 30px;">
-      <a href="#" style="display: inline-block; background-image: linear-gradient(135deg, #c8a4a5 0%, #d48c8f 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">View Full RFQ Details</a>
-    </div>
-    
-    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e6d8d8; text-align: center;">
-      <p style="font-size: 14px; color: #b38d82; margin-bottom: 5px;">Don't miss this opportunity!</p>
-      <p style="font-size: 16px; font-weight: bold; color: #c8a4a5; margin-top: 0;">Submit your offer today</p>
-    </div>
-  </div>
-  
-  <!-- Footer area with soft gradient -->
-  <div style="background-image: linear-gradient(to right, #e6d8d8, #c8a4a5); padding: 20px; text-align: center; font-size: 14px; color: #ffffff; border-radius: 0 0 8px 8px; box-shadow: 0 -2px 5px rgba(0,0,0,0.03);">
-    <p style="margin: 0 0 10px 0;">© ${new Date().getFullYear()} Your Company Name. All rights reserved.</p>
-    <p style="margin: 0;">This email is regarding a new bulk order request on our platform.</p>
-  </div>
-</body>
-</html>`;
-
-  try {
-    await sendMail({
-      email: shop.email,
-      subject: `New Bulk Order Request - ${productName}`,
-      message,
-      html: htmlMessage
+    // Save the bulk order request
+    const bulkOrder = await BulkOrder.create({
+      userId,
+      productName,
+      description,
+      quantity,
+      category,
+      inspoPic,
+      budget,
+      deliveryDeadline,
+      shippingAddress,
+      packagingRequirements,
+      supplierLocationPreference,
     });
-    console.log(`Email sent to ${shop.email}`);
-  } catch (error) {
-    console.error(`Error sending email to ${shop.email}:`, error);
-  }
-} else {
-  console.warn(`No email defined for shop: ${shop.name}`);
-}
 
+    // Find all products with the specified category
+    const products = await Product.find({ category });
 
+    // Extract unique shop IDs from the products
+    const uniqueShopIds = [...new Set(products.map(product => product.shopId))];
 
+    // Find all shops that match these shop IDs
+    const relevantShops = await Shop.find({ _id: { $in: uniqueShopIds } });
 
-    
-  }}
- 
-   
-  res.status(201).json({
-    success: true,
-    message: 'Bulk order created and RFQ sent to relevant shops.',
-    bulkOrder,
-    rfqs,
-    
-  });
-}));
+    // Generate and send RFQ to relevant shops
+    const rfqs = [];
+    for (const shop of relevantShops) {
+      console.log(`Sending RFQ to Shop: ${shop.name}`);
+      
+      const rfq = await RFQ.create({
+        bulkOrderId: bulkOrder._id,
+        shopId: shop._id,
+        userId: bulkOrder.userId,
+      });
+
+      if (rfq.price !== null && rfq.price !== undefined) {
+        rfqs.push(rfq); // Only add valid RFQs
+        
+        // Ensure shop email exists
+        if (shop.email) {
+          const message = `A new bulk order has been created for your product category. Please review the RFQ and submit your offer. 
+          Product Name: ${productName}
+          Quantity: ${quantity}
+          Budget: ${budget}
+          Delivery Deadline: ${deliveryDeadline}`;
+
+          const htmlMessage = `<!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Bulk Order Request</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background-color: #faf7f7; color: #5a4336;">
+          <!-- Header with logo area and gradient background -->
+          <div style="background-image: linear-gradient(135deg, #c8a4a5 0%, #d48c8f 100%); padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">New Bulk Order Request</h1>
+          </div>
+          
+          <!-- Main content area with card gradient effect -->
+          <div style="padding: 35px 25px; border-left: 1px solid #e6d8d8; border-right: 1px solid #e6d8d8; border-bottom: 1px solid #e6d8d8; background-image: linear-gradient(to bottom, #ffffff, #f5f0f0); border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h2 style="color: #c8a4a5; margin-top: 0; font-size: 24px;">New Bulk Order Opportunity!</h2>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #5a4336;">Hello,</p>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #5a4336;">A new bulk order has been created for your product category. Please review the details below and submit your offer if you're interested.</p>
+            
+            <!-- Order details section -->
+            <div style="margin: 30px 0; padding: 25px; border-radius: 8px; background-image: linear-gradient(to right, #f5f0f0, #e6d8d8);">
+              <h3 style="color: #c8a4a5; margin-top: 0; font-size: 20px;">Bulk Order Details</h3>
+              
+              <div style="background-color: #ffffff; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
+                <p style="font-size: 16px; line-height: 1.5; color: #5a4336; margin: 5px 0;">
+                  <strong style="color: #c8a4a5;">Product Name:</strong> ${productName}
+                </p>
+              </div>
+              
+              <div style="background-color: #ffffff; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
+                <p style="font-size: 16px; line-height: 1.5; color: #5a4336; margin: 5px 0;">
+                  <strong style="color: #c8a4a5;">Quantity:</strong> ${quantity}
+                </p>
+              </div>
+              
+              <div style="background-color: #ffffff; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
+                <p style="font-size: 16px; line-height: 1.5; color: #5a4336; margin: 5px 0;">
+                  <strong style="color: #c8a4a5;">Budget:</strong> ${budget}
+                </p>
+              </div>
+              
+              <div style="background-color: #ffffff; border-radius: 6px; padding: 15px;">
+                <p style="font-size: 16px; line-height: 1.5; color: #5a4336; margin: 5px 0;">
+                  <strong style="color: #c8a4a5;">Delivery Deadline:</strong> ${deliveryDeadline}
+                </p>
+              </div>
+            </div>
+            
+            <!-- Next steps section -->
+            <div style="margin: 30px 0; padding: 20px; border-radius: 6px; background-color: #f5f0f0; border-left: 4px solid #d48c8f;">
+              <h3 style="color: #c8a4a5; margin-top: 0; font-size: 18px;">What's Next?</h3>
+              <ul style="font-size: 16px; line-height: 1.6; color: #5a4336; padding-left: 20px;">
+                <li>Login to your seller dashboard to view the complete RFQ details</li>
+                <li>Submit your best offer with competitive pricing and terms</li>
+                <li>Specify your delivery timeline and any special conditions</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="#" style="display: inline-block; background-image: linear-gradient(135deg, #c8a4a5 0%, #d48c8f 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">View Full RFQ Details</a>
+            </div>
+            
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e6d8d8; text-align: center;">
+              <p style="font-size: 14px; color: #b38d82; margin-bottom: 5px;">Don't miss this opportunity!</p>
+              <p style="font-size: 16px; font-weight: bold; color: #c8a4a5; margin-top: 0;">Submit your offer today</p>
+            </div>
+          </div>
+          
+          <!-- Footer area with soft gradient -->
+          <div style="background-image: linear-gradient(to right, #e6d8d8, #c8a4a5); padding: 20px; text-align: center; font-size: 14px; color: #ffffff; border-radius: 0 0 8px 8px; box-shadow: 0 -2px 5px rgba(0,0,0,0.03);">
+            <p style="margin: 0 0 10px 0;">© ${new Date().getFullYear()} Your Company Name. All rights reserved.</p>
+            <p style="margin: 0;">This email is regarding a new bulk order request on our platform.</p>
+          </div>
+        </body>
+        </html>`;
+
+          try {
+            await sendMail({
+              email: shop.email,
+              subject: `New Bulk Order Request - ${productName}`,
+              message,
+              html: htmlMessage
+            });
+            console.log(`Email sent to ${shop.email}`);
+          } catch (error) {
+            console.error(`Error sending email to ${shop.email}:`, error);
+          }
+        } else {
+          console.warn(`No email defined for shop: ${shop.name}`);
+        }
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Bulk order created and RFQ sent to relevant shops.',
+      bulkOrder,
+      rfqs,
+    });
+  })
+);
 
 
 

@@ -16,7 +16,9 @@ const sendShopToken = require("../utils/shopToken");
 const Product = require("../model/product");
 const { createShopValidationSchema } = require("../utils/shopValidation");
 const Order = require("../model/order");
-
+const passport = require('passport'); // Add this import at the top
+const crypto = require("crypto");
+// create shop
 // create shop
 // create shop
 router.post("/create-shop", upload.single("file"), async (req, res, next) => {
@@ -43,9 +45,16 @@ router.post("/create-shop", upload.single("file"), async (req, res, next) => {
 
     const filename = req.file.filename;
     const fileUrl = `/${filename}`;
-    ; //madechanges
 
-    const seller = {
+    // Generate activation token
+    const activationToken = crypto.randomBytes(32).toString('hex');
+    // Set expiration time (24 hours from now)
+    const activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    console.log("Creating shop with token expiry:", activationTokenExpires);
+
+    // Create inactive shop
+    const shop = await Shop.create({
       name: req.body.name,
       email: email,
       password: req.body.password,
@@ -55,17 +64,20 @@ router.post("/create-shop", upload.single("file"), async (req, res, next) => {
       address: req.body.address,
       phoneNumber: req.body.phoneNumber,
       zipCode: req.body.zipCode,
-    };
+      isActive: false,
+      activationToken: activationToken,
+      activationTokenExpires: activationTokenExpires
+    });
 
-    const activationToken = createActivationToken(seller);
-
+    // Use the frontend route for activation
     const activationUrl = `http://localhost:3000/seller/activation/${activationToken}`;
 
- try {
+    // Send email to seller
+    try {
   // Plain text version for fallback
-  const activationMessage = `Hello ${seller.name}, please click on the link to activate your shop: ${activationUrl}
+  const activationMessage = `Hello ${shop.name}, please click on the link to activate your shop: ${activationUrl}
 
-This link is valid for 24 hours. If you didn't request this, please ignore this email.`;
+ If you didn't request this, please ignore this email.`;
 
   // HTML version with styling based on theme
   const htmlActivationMessage = `
@@ -86,7 +98,7 @@ This link is valid for 24 hours. If you didn't request this, please ignore this 
   <div style="padding: 35px 25px; border-left: 1px solid #e6d8d8; border-right: 1px solid #e6d8d8; border-bottom: 1px solid #e6d8d8; background-image: linear-gradient(to bottom, #ffffff, #f5f0f0); border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
     <h2 style="color: #c8a4a5; margin-top: 0; font-size: 24px;">Activate Your Shop</h2>
     
-    <p style="font-size: 16px; line-height: 1.6; color: #5a4336;">Hello <strong>${seller.name}</strong>,</p>
+    <p style="font-size: 16px; line-height: 1.6; color: #5a4336;">Hello <strong>${shop.name}</strong>,</p>
     
     <p style="font-size: 16px; line-height: 1.6; color: #5a4336;">Thank you for registering your shop with us! To begin selling your products and reaching customers, please activate your shop by clicking the button below:</p>
     
@@ -128,7 +140,7 @@ This link is valid for 24 hours. If you didn't request this, please ignore this 
   `;
 
   await sendMail({
-    email: seller.email,
+    email: shop.email,
     subject: "Activate Your Shop - Start Selling Today!",
     message: activationMessage,
     html: htmlActivationMessage
@@ -136,15 +148,17 @@ This link is valid for 24 hours. If you didn't request this, please ignore this 
   
   res.status(201).json({
     success: true,
-    message: `Please check your email: ${seller.email} to activate your shop!`,
+    message: `Please check your email: ${shop.email} to activate your shop!`,
   });
 } catch (error) {
   return next(new ErrorHandler(error.message, 500));
 }
-} catch (error) {
-  return next(new ErrorHandler(error.message, 400));
-}
+
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 400));
+  }
 });
+
 // create activation token
 const createActivationToken = (seller) => {
   return jwt.sign(seller, process.env.ACTIVATION_SECRET, {
@@ -152,43 +166,99 @@ const createActivationToken = (seller) => {
   });
 };
 
-// activate user
-router.post(
-  "/activation",
+// Activate shop account via email link (POST endpoint)
+router.post("/activation", catchAsyncErrors(async (req, res, next) => {
+  try {
+    const { activation_token } = req.body;
+
+    const shop = await Shop.findOne({ 
+      activationToken: activation_token,
+      activationTokenExpires: { $gt: Date.now() }
+    });
+
+    if (!shop) {
+      return next(new ErrorHandler("Invalid or expired activation token", 400));
+    }
+
+    shop.isActive = true;
+    shop.activationToken = undefined;
+    shop.activationTokenExpires = undefined;
+    await shop.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Shop activated successfully!" 
+    });
+  } catch (error) {
+    next(new ErrorHandler("Activation failed", 500));
+  }
+}));
+
+// Admin route to manually activate a shop
+router.put(
+  "/admin-activate-shop/:id",
+  isAuthenticated,
+  isAdmin("Admin"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { activation_token } = req.body;
+      const shop = await Shop.findById(req.params.id);
 
-      const newSeller = jwt.verify(
-        activation_token,
-        process.env.ACTIVATION_SECRET
-      );
-
-      if (!newSeller) {
-        return next(new ErrorHandler("Invalid token", 400));
-      }
-      const { name, email, password, avatar, zipCode, area, region, address, phoneNumber } =
-        newSeller;
-
-      let seller = await Shop.findOne({ email });
-
-      if (seller) {
-        return next(new ErrorHandler("User already exists", 400));
+      if (!shop) {
+        return next(new ErrorHandler("Shop not found", 404));
       }
 
-      seller = await Shop.create({
-        name,
-        email,
-        avatar,
-        password,
-        zipCode,
-        area,
-        region,
-        address,
-        phoneNumber,
+      shop.isActive = true;
+      shop.activationToken = undefined;
+      shop.activationTokenExpires = undefined;
+      await shop.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Shop account activated successfully"
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+// Resend activation email for shop
+router.post(
+  "/resend-activation",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      const shop = await Shop.findOne({ email });
+
+      if (!shop) {
+        return next(new ErrorHandler("Shop not found", 404));
+      }
+
+      if (shop.isActive) {
+        return next(new ErrorHandler("Shop is already active", 400));
+      }
+
+      // Generate new activation token
+      const activationToken = crypto.randomBytes(32).toString('hex');
+      const activationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
+      shop.activationToken = activationToken;
+      shop.activationTokenExpires = activationTokenExpires;
+      await shop.save();
+
+      const activationUrl = `http://localhost:3000/seller/activation/${activationToken}`;
+
+      // Send email to shop
+      await sendMail({
+        email: shop.email,
+        subject: "Activate your shop",
+        message: `Hello ${shop.name}, please click on the link to activate your shop ${activationUrl} `,
       });
 
-      sendShopToken(seller, 201, res);
+      res.status(200).json({
+        success: true,
+        message: `Activation email sent to ${shop.email}`,
+      });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
     }
@@ -446,8 +516,6 @@ router.delete(
 );
 
 
-
-
 // shop.js controller
 router.get('/sales-data/:sellerId', async (req, res) => {
   try {
@@ -533,7 +601,7 @@ router.get('/sales-data/breakdown/:sellerId', async (req, res) => {
                   if (interval === 'daily') {
                       dateKey = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD
                   } else if (interval === 'monthly') {
-                      dateKey = orderDate.toISOString().split('T')[0].slice(0, 7); // YYYY-MM
+                      dateKey = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD
                   } else if (interval === 'yearly') {
                     dateKey = orderDate.toISOString().split('T')[0].slice(0, 7); // YYYY-MM
                     if (!salesBreakdown[dateKey]) {
@@ -604,7 +672,120 @@ router.get('/sales-summary/:sellerId', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+router.get(
+  "/auth/google",
+  passport.authenticate("google-shop", { 
+    scope: ["profile", "email"],
+    prompt: "select_account" // Lets user pick account
+  })
+);
 
+// Google OAuth callback for shops
+router.get(
+  "/auth/google/callback",
+  (req, res, next) => {
+    passport.authenticate("google-shop", (err, shop, info) => {
+      console.log('=== Shop Google Auth Callback Debug ===');
+      console.log('Query params:', req.query);
+      console.log('Error:', err);
+      console.log('Shop:', shop ? { id: shop._id, email: shop.email, googleId: shop.googleId } : null);
+      console.log('Info:', info);
+      console.log('=====================================');
+      
+      if (err) {
+        console.error('Authentication error:', err);
+        if (err.message.includes('email')) {
+          return res.redirect(`${process.env.CLIENT_URL}/shop-login?error=email_required`);
+        }
+        return res.redirect(`${process.env.CLIENT_URL}/shop-login?error=auth_failed&message=${encodeURIComponent(err.message)}`);
+      }
+      
+      if (!shop) {
+        console.error('No shop returned from authentication');
+        return res.redirect(`${process.env.CLIENT_URL}/shop-login?error=no_shop`);
+      }
+      
+      try {
+        // Generate JWT token
+        const token = shop.getJwtToken();
+           // Set cookie only once
+        res.cookie('seller_token', token, { 
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          sameSite: 'lax',
+          path: '/',
+        });
+        console.log('Generated token for shop:', shop.email);
+        
+        // Redirect with token in hash
+        const redirectUrl = `${process.env.CLIENT_URL}/shop-login#token=${token}`;
+        console.log('Redirecting to:', redirectUrl);
+        
+        res.redirect(redirectUrl);
+      } catch (tokenError) {
+        console.error('Token generation error:', tokenError);
+        return res.redirect(`${process.env.CLIENT_URL}/shop-login?error=token_failed`);
+      }
+    })(req, res, next);
+  }
+);
+
+// Check shop email route
+router.post(
+  "/check-shop-email",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      console.log('Checking shop email:', email);
+      
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required'
+        });
+      }
+      
+      const shop = await Shop.findOne({ email: email.toLowerCase().trim() });
+      console.log('Shop email check result:', shop ? 'Found' : 'Not found');
+      
+      if (shop) {
+        return res.status(200).json({
+          exists: true,
+          isGoogleLinked: !!shop.googleId
+        });
+      }
+      
+      res.status(200).json({
+        exists: false
+      });
+    } catch (error) {
+      console.error('Shop email check error:', error);
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+// Debug route for shop lookup
+router.get("/debug/shop/:email", catchAsyncErrors(async (req, res) => {
+  try {
+    const email = req.params.email;
+    const shop = await Shop.findOne({ email });
+    
+    res.json({
+      found: !!shop,
+      shop: shop ? {
+        id: shop._id,
+        email: shop.email,
+        name: shop.name,
+        googleId: shop.googleId,
+        role: shop.role
+      } : null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}));
 
 
 module.exports = router;

@@ -43,7 +43,7 @@ const SellerBookings = () => {
         <Loader />
       ) : (
         <div className="w-full p-8 bg-[#d8c4b8]/10 min-h-screen">
-          <h2 className="text-4xl font-bold text-[#5a4336] mb-8 text-center">Your Bookings</h2>
+          <h2 className="text-4xl font-bold text-[#5a4336] mb-8 text-center">Your user Bookings</h2>
           
           <div className="grid grid-cols-1 gap-6">
             {bookings?.map((booking) => (

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSpring, animated } from 'react-spring';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { server } from '../../server';
 import { toast } from 'react-toastify';
+import { FcGoogle } from 'react-icons/fc';
 
 const ShopLogin = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const ShopLogin = () => {
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
   // Animation for the main card
@@ -27,6 +29,51 @@ const ShopLogin = () => {
     to: { opacity: 1, transform: 'translateY(0)' },
     delay: 300,
   });
+
+  // Handle Google OAuth redirect and token processing
+  useEffect(() => {
+    // Check for token in URL hash (from Google OAuth redirect)
+    const hash = window.location.hash;
+    if (hash && hash.includes('token=')) {
+      const token = hash.split('token=')[1];
+      if (token) {
+        // Store token and redirect to dashboard
+        document.cookie = `seller_token=${token}; path=/; max-age=604800`; // 7 days
+        console.log('Google OAuth successful, redirecting to dashboard');
+        toast.success("Login Success!");
+        navigate("/dashboard");
+        window.location.reload(true);
+        return;
+      }
+    }
+
+    // Check for error parameters in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    const errorMessage = urlParams.get('message');
+
+    if (error) {
+      switch (error) {
+        case 'email_required':
+          toast.error('Email is required for Google sign-in. Please ensure your Google account has an email.');
+          break;
+        case 'auth_failed':
+          toast.error(errorMessage ? decodeURIComponent(errorMessage) : 'Google authentication failed. Please try again.');
+          break;
+        case 'no_shop':
+          toast.error('Unable to authenticate shop account. Please try again.');
+          break;
+        case 'token_failed':
+          toast.error('Authentication token error. Please try again.');
+          break;
+        default:
+          toast.error('Authentication error. Please try again.');
+      }
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,6 +93,16 @@ const ShopLogin = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleSignIn = () => {
+    setIsGoogleLoading(true);
+    
+    // Store current page to know where we came from
+    sessionStorage.setItem('authRedirectFrom', 'shop-login');
+    
+    // Redirect to Google OAuth for shops
+    window.location.href = `${server}/shop/auth/google`;
   };
 
   return (
@@ -69,6 +126,44 @@ const ShopLogin = () => {
 
           <h2 className="text-center text-2xl font-bold text-gray-800 mb-6">Login to your Shop</h2>
 
+          {/* Google Login Button */}
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading || isLoading}
+              className="w-full py-3 px-4 bg-white border-2 border-gray-200 text-gray-700 font-medium rounded-lg 
+                       flex items-center justify-center space-x-3 hover:bg-gray-50 hover:border-gray-300
+                       disabled:opacity-70 disabled:cursor-not-allowed
+                       transform hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg"
+            >
+              {isGoogleLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <FcGoogle className="w-5 h-5" />
+                  <span>Continue with Google</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or sign in with email</span>
+            </div>
+          </div>
+
           <animated.form style={formAnimation} onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input */}
             <div className="input-container group">
@@ -80,6 +175,7 @@ const ShopLogin = () => {
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:border-[#a67d6d] focus:ring-2 focus:ring-[#d8c4b8] transition-all duration-300 outline-none hover:shadow-lg"
                 placeholder="Email"
                 required
+                disabled={isGoogleLoading}
               />
               <div className="input-glow"></div>
             </div>
@@ -94,11 +190,13 @@ const ShopLogin = () => {
                 className="w-full pl-10 pr-12 py-3 rounded-lg border border-gray-200 focus:border-[#a67d6d] focus:ring-2 focus:ring-[#d8c4b8] transition-all duration-300 outline-none hover:shadow-lg"
                 placeholder="Password"
                 required
+                disabled={isGoogleLoading}
               />
               <button
                 type="button"
                 onClick={() => setVisible(!visible)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#a67d6d] transition-all duration-300"
+                disabled={isGoogleLoading}
               >
                 {visible ? (
                   <Eye className="w-5 h-5 hover:scale-110" />
@@ -109,13 +207,10 @@ const ShopLogin = () => {
               <div className="input-glow"></div>
             </div>
 
-            {/* Remember Me and Forgot Password */}
-         
-
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isGoogleLoading}
               className="w-full py-3 px-4 bg-gradient-to-r from-[#a67d6d] to-[#5a4336] text-white font-medium rounded-lg 
                        relative overflow-hidden button-shine hover:shadow-xl 
                        disabled:opacity-70 disabled:cursor-not-allowed
@@ -144,14 +239,15 @@ const ShopLogin = () => {
               Create Shop Account
             </Link>
           </div>
-                 <div className="mt-4 text-center">
-                          <Link 
-                            to="/forgot-password/user"
-                            className="text-sm text-[#a67d6d] hover:text-[#5a4336] font-medium transition-colors duration-300 hover:underline link-shine"
-                          >
-                            Forgot password?
-                          </Link>
-                        </div>
+          
+          <div className="mt-4 text-center">
+            <Link 
+              to="/forgot-password/user"
+              className="text-sm text-[#a67d6d] hover:text-[#5a4336] font-medium transition-colors duration-300 hover:underline link-shine"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </div>
       </animated.div>
 

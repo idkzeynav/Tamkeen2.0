@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { streamingRequest } = require("@huggingface/inference");
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -18,7 +19,7 @@ const userSchema = new mongoose.Schema({
     select: false,
   },
   phoneNumber: {
-    type: Number,
+    type: String,
   },
   addresses: [
     {
@@ -50,7 +51,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  
+  googleId: {
+    type: String,
+  },
   isActive: {
     type: Boolean,
     default: false

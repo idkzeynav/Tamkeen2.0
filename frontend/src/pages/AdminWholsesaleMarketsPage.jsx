@@ -153,193 +153,196 @@ const handleMaterialTypeChange = (index, value) => {
         <div className="w-[80px] 800px:w-[330px]">
           <AdminSideBar active={6} /> {/* Set appropriate active menu */}
         </div>
-        <div className="w-full p-4">      <h3 className="text-[22px] font-Poppins pb-2">Wholesale Markets</h3>
-        <div className="flex justify-end mb-4">
-            <button
-              onClick={() => navigate("/admin-wholesale-markets/create")}
-              className="bg-gradient-to-r from-[#c8a4a5] to-[#8c6c6b] text-white py-2 px-6 rounded-lg hover:opacity-90 transition-opacity"
+        <div className="w-full p-3 flex justify-center">
+          <div className="max-w-6xl w-full">
+            <h3 className="text-2xl font-semibold text-[#5a4336] ">Wholesale Markets</h3>
+            <div className="flex justify-end mb-4">
+                <button
+                  onClick={() => navigate("/admin-wholesale-markets/create")}
+                  className="bg-gradient-to-r from-[#c8a4a5] to-[#8c6c6b] text-white py-2 px-6 rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Create New Wholesale Market
+                </button>
+              </div>
+
+          {showSuccessPopup && (
+            <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg">
+              Wholesale Market created successfully!
+            </div>
+          )}
+
+          {isLoading ? (
+            <Loader />
+          ) : (
+            <>
+             <div className="space-y-4">
+        {wholesaleMarkets.map((market) => (
+            <div
+                key={market._id}
+                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
             >
-              Create New Wholesale Market
-            </button>
-          </div>
-
-      {showSuccessPopup && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg">
-          Wholesale Market created successfully!
-        </div>
-      )}
-
-      {isLoading ? (
-        <Loader />
-      ) : (
-        <>
-         <div className="space-y-4">
-    {wholesaleMarkets.map((market) => (
-        <div
-            key={market._id}
-            className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
-        >
-            <div className="p-6">
-                <div className="border-b border-[#e6d8d8] pb-4 mb-4">
-                    <h3 className="text-xl font-semibold text-[#5a4336] mb-2">{market.supplierName}</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {Array.isArray(market.materialType) ? 
-                            market.materialType.map((type, idx) => (
-                                <span key={idx} className="bg-[#f7f1f1] px-3 py-1 rounded-full text-sm text-[#5a4336]">
-                                    {type}
+                <div className="p-6">
+                    <div className="border-b border-[#e6d8d8] pb-4 mb-4">
+                        <h3 className="text-xl font-semibold text-[#5a4336] mb-2">{market.supplierName}</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {Array.isArray(market.materialType) ? 
+                                market.materialType.map((type, idx) => (
+                                    <span key={idx} className="bg-[#f7f1f1] px-3 py-1 rounded-full text-sm text-[#5a4336]">
+                                        {type}
+                                    </span>
+                                )) : 
+                                <span className="bg-[#f7f1f1] px-3 py-1 rounded-full text-sm text-[#5a4336]">
+                                    {market.materialType}
                                 </span>
-                            )) : 
-                            <span className="bg-[#f7f1f1] px-3 py-1 rounded-full text-sm text-[#5a4336]">
-                                {market.materialType}
-                            </span>
-                        }
+                            }
+                        </div>
                     </div>
-                </div>
-              
-                <div className="text-[#5a4336] mb-4">
-    <p className="mb-2 flex items-center gap-2">
-        <MapPin size={18} className="text-[#c8a4a5] flex-shrink-0" />
-        <span>
-            <span className="font-medium">Location:</span>{" "}
-            {market.location.replace(/,?\s?\d+(\.\d+)?/g, "").trim()}
-        </span>
-    </p>
-    {market.contactInfo && (
-        <p className="flex items-center gap-2">
-            <Phone size={18} className="text-[#c8a4a5] flex-shrink-0" />
+                  
+                    <div className="text-[#5a4336] mb-4">
+        <p className="mb-2 flex items-center gap-2">
+            <MapPin size={18} className="text-[#c8a4a5] flex-shrink-0" />
             <span>
-                <span className="font-medium">Contact:</span> {market.contactInfo}
+                <span className="font-medium">Location:</span>{" "}
+                {market.location.replace(/,?\s?\d+(\.\d+)?/g, "").trim()}
             </span>
         </p>
-    )}
-</div>
+        {market.contactInfo && (
+            <p className="flex items-center gap-2">
+                <Phone size={18} className="text-[#c8a4a5] flex-shrink-0" />
+                <span>
+                    <span className="font-medium">Contact:</span> {market.contactInfo}
+                </span>
+            </p>
+        )}
+    </div>
 
 
 
 
-                <div className="flex justify-end space-x-4">
-                    <Link 
-                        to={`/admin-wholesale-markets/update/${market._id}`}
-                        className="text-[#c8a4a5] hover:text-[#8c6c6b] transition-colors"
-                    >
-                        <AiOutlineEdit size={24} />
-                    </Link>
-                    <button
-                        onClick={() => handleDelete(market._id)}
-                        className="text-red-400 hover:text-red-600 transition-colors"
-                    >
-                        <AiOutlineDelete size={24} />
-                    </button>
+                    <div className="flex justify-end space-x-4">
+                        <Link 
+                            to={`/admin-wholesale-markets/update/${market._id}`}
+                            className="text-[#c8a4a5] hover:text-[#8c6c6b] transition-colors"
+                        >
+                            <AiOutlineEdit size={24} />
+                        </Link>
+                        <button
+                            onClick={() => handleDelete(market._id)}
+                            className="text-red-400 hover:text-red-600 transition-colors"
+                        >
+                            <AiOutlineDelete size={24} />
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    ))}
-</div>
+        ))}
+    </div>
 
 
 
-        </>
-      )}
-      {showForm && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div className="bg-white p-8 rounded-lg max-w-md w-full">
-      <h2 className="text-2xl font-bold mb-6">Create Wholesale Market</h2>
-      
-      <form onSubmit={handleCreateSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Supplier Name</label>
-          <input
-            type="text"
-            value={supplierName}
-            onChange={(e) => setSupplierName(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Material Types</label>
-          {materialTypes.map((type, index) => (
-            <div key={index} className="flex gap-2 mb-2">
+            </>
+          )}
+          {showForm && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg max-w-md w-full">
+          <h2 className="text-2xl font-bold mb-6">Create Wholesale Market</h2>
+          
+          <form onSubmit={handleCreateSubmit}>
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Supplier Name</label>
               <input
                 type="text"
-                value={type}
-                onChange={(e) => handleMaterialTypeChange(index, e.target.value)}
-                className="flex-1 p-2 border rounded"
+                value={supplierName}
+                onChange={(e) => setSupplierName(e.target.value)}
+                className="w-full p-2 border rounded"
                 required
               />
-              <button
-                type="button"
-                onClick={() => removeMaterialType(index)}
-                className="px-2 py-1 bg-red-500 text-white rounded"
-                disabled={materialTypes.length === 1}
-              >
-                <AiOutlineMinusCircle />
-              </button>
-              {index === materialTypes.length - 1 && (
-                <button
-                  type="button"
-                  onClick={addMaterialType}
-                  className="px-2 py-1 bg-green-500 text-white rounded"
-                >
-                  <AiOutlinePlusCircle />
-                </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Material Types</label>
+              {materialTypes.map((type, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={type}
+                    onChange={(e) => handleMaterialTypeChange(index, e.target.value)}
+                    className="flex-1 p-2 border rounded"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeMaterialType(index)}
+                    className="px-2 py-1 bg-red-500 text-white rounded"
+                    disabled={materialTypes.length === 1}
+                  >
+                    <AiOutlineMinusCircle />
+                  </button>
+                  {index === materialTypes.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={addMaterialType}
+                      className="px-2 py-1 bg-green-500 text-white rounded"
+                    >
+                      <AiOutlinePlusCircle />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Contact Number</label>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">+92</span>
+                <input
+                  type="text"
+                  value={contactInfo}
+                  onChange={handleContactChange}
+                  placeholder="3xxxxxxxxx"
+                  maxLength="10"
+                  className="flex-1 p-2 border rounded"
+                  
+                />
+              </div>
+              {contactError && (
+                <p className="text-red-500 text-sm mt-1">{contactError}</p>
               )}
             </div>
-          ))}
-        </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Location</label>
-          <input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="px-4 py-2 bg-gray-300 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-[#c8a4a5] text-white rounded"
+              >
+                Create
+              </button>
+            </div>
+          </form>
         </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Contact Number</label>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">+92</span>
-            <input
-              type="text"
-              value={contactInfo}
-              onChange={handleContactChange}
-              placeholder="3xxxxxxxxx"
-              maxLength="10"
-              className="flex-1 p-2 border rounded"
-              
-            />
+      </div>
+    )}
           </div>
-          {contactError && (
-            <p className="text-red-500 text-sm mt-1">{contactError}</p>
-          )}
         </div>
-
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setShowForm(false)}
-            className="px-4 py-2 bg-gray-300 rounded"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-[#c8a4a5] text-white rounded"
-          >
-            Create
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
-    </div>
-    </div>
+      </div>
     </div>
 
   );

@@ -63,4 +63,33 @@ export const bookingReducer = createReducer(initialState, {
     state.isLoading = false;
     state.error = action.payload;
   },
+  // Add to your bookingReducer
+rejectBookingRequest: (state) => {
+  state.isLoading = true;
+},
+rejectBookingSuccess: (state, action) => {
+  state.isLoading = false;
+  state.bookings = state.bookings.map((booking) =>
+    booking._id === action.payload._id ? action.payload : booking
+  );
+},
+rejectBookingFail: (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+},
+
+// Add to your bookingReducer
+cancelBookingRequest: (state) => {
+  state.isLoading = true;
+},
+cancelBookingSuccess: (state, action) => {
+  state.isLoading = false;
+  state.bookings = state.bookings.map((booking) =>
+    booking._id === action.payload._id ? action.payload : booking
+  );
+},
+cancelBookingFail: (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+},
 });

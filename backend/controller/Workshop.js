@@ -7,7 +7,7 @@ const UserWorkshop = require('../model/userworkshop');
 const Quiz = require('../model/quiz');
 const QuizAttempt = require('../model/quizAttempt');
 const Certificate = require('../model/certificate');
-
+const { upload } = require("../middleware/multer");
 // Import middleware and utils
 const ErrorHandler = require("../utils/ErrorHandler");
 const { isAuthenticated, isAdmin } = require("../middleware/auth");
@@ -18,11 +18,15 @@ const { v4: uuidv4 } = require('uuid');
 // HELPER FUNCTIONS
 //======================================================================
 
+
 /**
  * Extracts YouTube video ID from different URL formats
  * @param {string} url - YouTube URL in various formats
  * @returns {string|null} - YouTube video ID or null if not found
  */
+
+
+
 function getVideoId(url) {
   if (!url) return null;
   
@@ -819,5 +823,175 @@ router.get(
     }
   })
 );
+
+
+
+
+ 
+router.put(
+  "/update-workshop/:id",
+  isAuthenticated,
+  isAdmin("Admin"),
+  upload.single('customThumbnail'), // Using your existing Multer upload
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const workshopId = req.params.id;
+      const { 
+        name, 
+        category, 
+        description, 
+        totalDuration, 
+        requirements, 
+        level,
+        videoThumbnailUpdates // JSON string of video thumbnail updates
+      } = req.body;
+
+      // Find existing workshop
+      const workshop = await Workshop.findById(workshopId);
+      if (!workshop) {
+        return next(new ErrorHandler("Workshop not found", 404));
+      }
+
+      // Prepare update object (excluding videos)
+      const updateData = {};
+      
+      if (name) updateData.name = name;
+      if (category) updateData.category = category;
+      if (description) updateData.description = description;
+      if (totalDuration) updateData.totalDuration = totalDuration;
+      if (requirements !== undefined) updateData.requirements = requirements;
+      if (level) updateData.level = level;
+
+      // Handle video thumbnail updates if provided
+      if (videoThumbnailUpdates) {
+        try {
+          const thumbnailUpdates = JSON.parse(videoThumbnailUpdates);
+          const updatedVideos = [...workshop.videos];
+          
+          // Update specific video thumbnails
+          Object.entries(thumbnailUpdates).forEach(([videoIndex, customThumbnail]) => {
+            const index = parseInt(videoIndex);
+            if (index >= 0 && index < updatedVideos.length) {
+              if (customThumbnail) {
+                updatedVideos[index].thumbnail = customThumbnail;
+              }
+            }
+          });
+          
+          updateData.videos = updatedVideos;
+        } catch (parseError) {
+          console.error("Error parsing video thumbnail updates:", parseError);
+        }
+      }
+
+      // Handle uploaded custom thumbnail for workshop
+      if (req.file) {
+        // If there was a previous custom thumbnail, you might want to delete it
+        // (Optional: implement cleanup logic here)
+        
+        updateData.customThumbnail = `/${req.file.filename}`;
+      }
+
+      // Update workshop
+      const updatedWorkshop = await Workshop.findByIdAndUpdate(
+        workshopId,
+        updateData,
+        { new: true, runValidators: true }
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Workshop updated successfully",
+        workshop: updatedWorkshop
+      });
+
+    } catch (error) {
+      // Clean up uploaded file if error occurs
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error("Error deleting uploaded file:", err);
+        });
+      }
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+/**
+ * Update specific video thumbnail
+ * PUT /update-video-thumbnail/:workshopId/:videoIndex
+ */
+router.put(
+  "/update-video-thumbnail/:workshopId/:videoIndex",
+  isAuthenticated,
+  isAdmin("Admin"),
+  upload.single('videoThumbnail'),
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { workshopId, videoIndex } = req.params;
+      const index = parseInt(videoIndex);
+
+      const workshop = await Workshop.findById(workshopId);
+      if (!workshop) {
+        return next(new ErrorHandler("Workshop not found", 404));
+      }
+
+      if (index < 0 || index >= workshop.videos.length) {
+        return next(new ErrorHandler("Invalid video index", 400));
+      }
+
+      if (!req.file) {
+        return next(new ErrorHandler("No image file provided", 400));
+      }
+
+      // Update the specific video's thumbnail
+      workshop.videos[index].thumbnail = `/${req.file.filename}`;
+      
+      await workshop.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Video thumbnail updated successfully",
+        thumbnail: workshop.videos[index].thumbnail,
+        workshop: workshop
+      });
+
+    } catch (error) {
+      // Clean up uploaded file if error occurs
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error("Error deleting uploaded file:", err);
+        });
+      }
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+/**
+ * Get workshop for editing (admin only)
+ * GET /edit-workshop/:id
+ */
+router.get(
+  "/edit-workshop/:id",
+  isAuthenticated,
+  isAdmin("Admin"),
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const workshop = await Workshop.findById(req.params.id);
+      if (!workshop) {
+        return next(new ErrorHandler("Workshop not found", 404));
+      }
+
+      res.status(200).json({
+        success: true,
+        workshop
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
 
 module.exports = router;

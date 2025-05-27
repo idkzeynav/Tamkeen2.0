@@ -1,23 +1,34 @@
-import React from "react";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { RxDashboard } from "react-icons/rx";
 import { FiShoppingBag } from "react-icons/fi";
 import { GrWorkshop } from "react-icons/gr";
-import { RxDashboard } from "react-icons/rx";
-import { CiMoneyBill, CiSettings } from "react-icons/ci";
-import { useNavigate } from "react-router-dom";
 import { HiOutlineUserGroup } from "react-icons/hi";
-import { BsHandbag } from "react-icons/bs";
+import { BsHandbag, BsShieldExclamation } from "react-icons/bs";
+import { AiFillShop, AiOutlineLogin , AiOutlineRight } from "react-icons/ai";
 import { MdOutlineLocalOffer } from "react-icons/md";
-import { AiFillShop,AiOutlineLogin } from "react-icons/ai";
 import axios from "axios";
 import { server } from "../../../server";
 import { toast } from "react-toastify";
-import { useSelector } from "react-redux";
-import {Link } from "react-router-dom";
-import { BsShieldExclamation} from 'react-icons/bs';
-
 
 const AdminSideBar = ({ active }) => {
-const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [openMenus, setOpenMenus] = useState({
+    workshops: false
+  });
+
+  const toggleMenu = (menu) => {
+    setOpenMenus(prev => ({
+      ...prev,
+      [menu]: !prev[menu]
+    }));
+  };
+
+  const closeAllMenus = () => {
+    setOpenMenus({
+      workshops: false
+    });
+  };
 
   const logoutHandler = () => {
     axios
@@ -31,165 +42,212 @@ const navigate = useNavigate();
         console.log(error.response.data.message);
       });
   };
+
   return (
-    <div className="fixed top-0 left-0 h-screen bg-[#f7f1f1] shadow-lg w-[80px] md:w-[250px] flex flex-col transition-all duration-300 z-20">
-      <div className="text-center py-6 border-b border-[#e6d8d8]">
-        <h2 className="text-[#5a4336] font-bold text-lg md:text-2xl">Admin</h2>
+    <div className="w-[270px] h-[90vh] bg-white shadow-sm fixed top-[10vh] left-0 z-10">
+      <div className="px-3 py-4 space-y-1">
+        {/* Dashboard */}
+        <Link to="/admin/dashboard" onClick={closeAllMenus}>
+          <div 
+            className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+              ${active === 1 ? "bg-gray-50" : ""}`}
+          >
+            <RxDashboard 
+              size={22} 
+              className={`${active === 1 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+            />
+            <span className={`hidden 800px:block pl-3 text-[15px] font-medium ${
+              active === 1 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+            }`}>
+              Dashboard
+            </span>
+          </div>
+        </Link>
+
+        {/* Orders */}
+        <Link to="/admin-orders" onClick={closeAllMenus}>
+          <div 
+            className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+              ${active === 2 ? "bg-gray-50" : ""}`}
+          >
+            <FiShoppingBag 
+              size={22} 
+              className={`${active === 2 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+            />
+            <span className={`hidden 800px:block pl-3 text-[15px] font-medium ${
+              active === 2 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+            }`}>
+              All Orders
+            </span>
+          </div>
+        </Link>
+
+        {/* Sellers */}
+        <Link to="/admin-sellers" onClick={closeAllMenus}>
+          <div 
+            className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+              ${active === 3 ? "bg-gray-50" : ""}`}
+          >
+            <GrWorkshop 
+              size={22} 
+              className={`${active === 3 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+            />
+            <span className={`hidden 800px:block pl-3 text-[15px] font-medium ${
+              active === 3 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+            }`}>
+              All Sellers
+            </span>
+          </div>
+        </Link>
+
+        {/* Users */}
+        <Link to="/admin-users" onClick={closeAllMenus}>
+          <div 
+            className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+              ${active === 4 ? "bg-gray-50" : ""}`}
+          >
+            <HiOutlineUserGroup 
+              size={22} 
+              className={`${active === 4 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+            />
+            <span className={`hidden 800px:block pl-3 text-[15px] font-medium ${
+              active === 4 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+            }`}>
+              All Users
+            </span>
+          </div>
+        </Link>
+
+        {/* Products */}
+        <Link to="/admin-products" onClick={closeAllMenus}>
+          <div 
+            className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+              ${active === 5 ? "bg-gray-50" : ""}`}
+          >
+            <BsHandbag 
+              size={22} 
+              className={`${active === 5 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+            />
+            <span className={`hidden 800px:block pl-3 text-[15px] font-medium ${
+              active === 5 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+            }`}>
+              All Products
+            </span>
+          </div>
+        </Link>
+
+         {/* Flagged Posts */}
+        <Link to="/admin-flagged-posts" onClick={closeAllMenus}>
+          <div 
+            className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+              ${active === 10 ? "bg-gray-50" : ""}`}
+          >
+            <BsShieldExclamation 
+              size={22} 
+              className={`${active === 10 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+            />
+            <span className={`hidden 800px:block pl-3 text-[15px] font-medium ${
+              active === 10 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+            }`}>
+              Flagged Posts
+            </span>
+          </div>
+        </Link>
+
+        {/* Wholesale Markets */}
+        <Link to="/admin-wholesale-markets" onClick={closeAllMenus}>
+          <div 
+            className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+              ${active === 6 ? "bg-gray-50" : ""}`}
+          >
+            <AiFillShop 
+              size={22} 
+              className={`${active === 6 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+            />
+            <span className={`hidden 800px:block pl-3 text-[15px] font-medium ${
+              active === 6 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+            }`}>
+              Wholesale Markets
+            </span>
+          </div>
+        </Link>
+
+        {/* Workshops Dropdown */}
+        <div 
+          className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+            ${(active === 8 || active === 9) ? "bg-gray-50" : ""}`}
+          onClick={() => toggleMenu('workshops')}
+        >
+          <BsHandbag 
+            size={22} 
+            className={`${(active === 8 || active === 9) ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+          />
+          <span className={`hidden 800px:block pl-3 text-[15px] font-medium ${
+            (active === 8 || active === 9) ? "text-[#c8a4a5]" : "text-[#5a4336]"
+          }`}>
+            Workshops
+          </span>
+          <AiOutlineRight
+            size={16}
+            className={`ml-auto transition-transform ${openMenus.workshops ? "rotate-90" : ""}`}
+          />
+        </div>
+        
+        {openMenus.workshops && (
+          <div className="ml-6 mt-1 border-l-2 border-gray-100">
+            <Link to="/createworkshop" onClick={closeAllMenus}>
+              <div 
+                className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+                  ${active === 8 ? "bg-gray-50" : ""}`}
+              >
+                <MdOutlineLocalOffer 
+                  size={20} 
+                  className={`${active === 8 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+                />
+                <span className={`hidden 800px:block pl-3 text-[14px] font-medium ${
+                  active === 8 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+                }`}>
+                  Create Workshop
+                </span>
+              </div>
+            </Link>
+            
+            <Link to="/Adminworkshop" onClick={closeAllMenus}>
+              <div 
+                className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+                  ${active === 9 ? "bg-gray-50" : ""}`}
+              >
+                <MdOutlineLocalOffer 
+                  size={20} 
+                  className={`${active === 9 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+                />
+                <span className={`hidden 800px:block pl-3 text-[14px] font-medium ${
+                  active === 9 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+                }`}>
+                  All Workshops
+                </span>
+              </div>
+            </Link>
+          </div>
+        )}
+
+        {/* Logout */}
+        <div 
+          onClick={logoutHandler}
+          className={`w-full flex items-center p-3 cursor-pointer rounded-lg transition-colors hover:bg-gray-50 
+            ${active === 7 ? "bg-gray-50" : ""}`}
+        >
+          <AiOutlineLogin 
+            size={22} 
+            className={`${active === 7 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
+          />
+          <span className={`hidden 800px:block pl-3 text-[15px] font-medium ${
+            active === 7 ? "text-[#c8a4a5]" : "text-[#5a4336]"
+          }`}>
+            Logout
+          </span>
+        </div>
       </div>
-      <nav className="flex-1 mt-4 overflow-y-auto">
-        <ul className="space-y-2">
-          {/* Dashboard */}
-          <li>
-            <Link
-              to="/admin/dashboard"
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 1 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              <RxDashboard
-                size={24}
-                className={`${active === 1 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">Dashboard</span>
-            </Link>
-          </li>
-          {/* Orders */}
-          <li>
-            <Link
-              to="/admin-orders"
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 2 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              <FiShoppingBag
-                size={24}
-                className={`${active === 2 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">All Orders</span>
-            </Link>
-          </li>
-          {/* Sellers */}
-          <li>
-            <Link
-              to="/admin-sellers"
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 3 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              <GrWorkshop
-                size={24}
-                className={`${active === 3 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">All Sellers</span>
-            </Link>
-          </li>
-          {/* Users */}
-          <li>
-            <Link
-              to="/admin-users"
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 4 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              <HiOutlineUserGroup
-                size={24}
-                className={`${active === 4 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">All Users</span>
-            </Link>
-          </li>
-          {/* Products */}
-          <li>
-            <Link
-              to="/admin-products"
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 5 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              <BsHandbag
-                size={24}
-                className={`${active === 5 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">All Products</span>
-            </Link>
-          </li>
-          {/* Wholesale Markets */}
-          <li>
-            <Link
-              to="/admin-wholesale-markets"
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 6 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              < AiFillShop 
-                size={24}
-                className={`${active === 6 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">Wholesale Markets</span>
-            </Link>
-          </li>
-          {/* Settings */}
-          <li>
-
-
-          <li>
-            <Link
-              to="/createworkshop"
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 8 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              <BsHandbag
-                size={24}
-                className={`${active === 8 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">Create Workshop</span>
-            </Link>
-          </li>
-
-          <li>
-            <Link
-              to="/Adminworkshop"
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 9 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              <BsHandbag
-                size={24}
-                className={`${active === 9 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">All Workshops</span>
-            </Link>
-          </li>
-            <Link
-              onClick={logoutHandler}
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 7 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              <AiOutlineLogin
-                size={24}
-                className={`${active === 7 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">Logout</span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/admin-flagged-posts"
-              className={`flex items-center gap-4 p-4 hover:bg-[#c8a4a5]/20 transition-colors rounded-lg ${
-                active === 10 ? "bg-[#c8a4a5]/20 text-[#c8a4a5]" : "text-[#5a4336]"
-              }`}
-            >
-              <BsShieldExclamation
-                size={24}
-                className={`${active === 10 ? "text-[#c8a4a5]" : "text-[#5a4336]"}`}
-              />
-              <span className="hidden md:block text-lg font-medium">Flagged Posts</span>
-            </Link>
-          </li>
-        </ul>
-      </nav>
     </div>
   );
 };

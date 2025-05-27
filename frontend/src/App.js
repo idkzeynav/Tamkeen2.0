@@ -51,7 +51,8 @@ import {
   ShopBookings,
   ShopBulkOrders,
   ShopAcceptedBulkOrders,
-  FinalBulkOrder
+  FinalBulkOrder,
+  ShopProfileCompletion
 } from "./routes/ShopRoutes";
 
 import {
@@ -60,10 +61,18 @@ import {
   AdminDashboardSellers,
   AdminDashboardOrders,
   AdminDashboardProducts,
-  AdminFlaggedPosts,
+AdminDashboardServices,
   CreateWorkshop,
   WorkshopList,
   Adminworkshopdetail,
+  ServiceCategoryManagement,
+  AdminDashboardservicesmoderation,
+    AdminReportedServices,
+    AdminDashboardWorkshop,
+    AdminDashboardcreatework,
+    AdminDashboardReport,
+      AdminFlaggedPosts,
+      UpdateWorkshop,
 } from "./routes/AdminRoutes";
 
 import { ToastContainer } from "react-toastify";
@@ -522,7 +531,7 @@ n
           }
         />
       
-    
+  
 
         {/* Admin Routes */}
         <Route
@@ -539,7 +548,7 @@ n
           path="/createworkshop"
           element={
             <ProtectedAdminRoute>
-              <CreateWorkshop />
+              <AdminDashboardcreatework />
             </ProtectedAdminRoute>
           }
         />
@@ -548,7 +557,7 @@ n
           path="/Adminworkshop"
           element={
             <ProtectedAdminRoute>
-              <WorkshopList/>
+              <AdminDashboardWorkshop/>
             </ProtectedAdminRoute>
           }
         />
@@ -562,8 +571,15 @@ n
             </ProtectedAdminRoute>
           }
         />
-
-
+//update
+<Route
+          path="/admin/workshop/update/:id" 
+          element={
+            <ProtectedAdminRoute>
+              <UpdateWorkshop/>
+            </ProtectedAdminRoute>
+          }
+        />
 
         <Route
           path="/admin-users"
@@ -597,12 +613,51 @@ n
             </ProtectedAdminRoute>
           }
         />
-        <Route path="/admin-flagged-posts" element={
+        <Route
+          path="/serviceManagement"
+          element={
+            <ProtectedAdminRoute>
+              <ServiceCategoryManagement />
+            </ProtectedAdminRoute>
+          }
+        />
+
+           <Route
+          path="/adminservicecategory"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboardServices />
+            </ProtectedAdminRoute>
+          }
+        />
+
+           <Route
+          path="/adminservicemoderation"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboardservicesmoderation />
+            </ProtectedAdminRoute>
+          }
+        />
+
+
+           <Route
+          path="/adminservicereports"
+          element={
+            <ProtectedAdminRoute>
+              <  AdminDashboardReport />
+            </ProtectedAdminRoute>
+          }
+        />
+
+
+                <Route path="/admin-flagged-posts" element={
         <ProtectedAdminRoute>
           <AdminFlaggedPosts />
         </ProtectedAdminRoute>
       } />
           
+
     
       </Routes>
       <ToastContainer

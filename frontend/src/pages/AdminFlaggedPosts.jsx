@@ -1,10 +1,11 @@
- import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { server } from '../server';
 import { toast } from 'react-hot-toast';
 import { BsShieldExclamation, BsCheckCircle, BsXCircle, BsEye } from 'react-icons/bs';
 import { AiOutlineClockCircle } from 'react-icons/ai';
+import AdminHeader from '../components/Layout/AdminHeader';
 import AdminSideBar from '../components/Admin/Layout/AdminSideBar';
 import Loader from '../components/Layout/Loader';
 
@@ -52,25 +53,16 @@ const AdminFlaggedPosts = () => {
     setPostDetailsOpen(true);
   };
 
-  // const formatDate = (dateString) => {
-  //   return new Date(dateString).toLocaleString('en-US', {
-  //     year: 'numeric',
-  //     month: 'short',
-  //     day: 'numeric',
-  //     hour: '2-digit',
-  //     minute: '2-digit',
-  //   });
-  // };
   const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   const handleApprovePost = async (postId) => {
     try {
@@ -81,7 +73,6 @@ const AdminFlaggedPosts = () => {
         { withCredentials: true }
       );
       
-      // Update local state to remove this post from the list
       setFlaggedPosts(flaggedPosts.filter(post => post._id !== postId));
       setPostDetailsOpen(false);
       toast.success('Post has been approved and flag removed');
@@ -101,7 +92,6 @@ const AdminFlaggedPosts = () => {
         { withCredentials: true }
       );
       
-      // Update local state to remove this post from the list
       setFlaggedPosts(flaggedPosts.filter(post => post._id !== postId));
       setPostDetailsOpen(false);
       toast.success('Post has been removed');
@@ -164,8 +154,8 @@ const AdminFlaggedPosts = () => {
                         Reported by: {flag.userId?.name || 'Anonymous User'}
                       </p>
                       <p className="text-sm text-gray-600 mb-2">
-  {formatDate(flag.flaggedAt)}  {/* Changed from flag.createdAt */}
-</p>
+                        {formatDate(flag.flaggedAt)}
+                      </p>
                       <p className="italic" style={{ color: colors.dark }}>
                         "{flag.reason}"
                       </p>
@@ -213,88 +203,95 @@ const AdminFlaggedPosts = () => {
   };
 
   return (
-    <div className="flex">
-      <AdminSideBar active={10} />
-      <div className="flex-1 ml-[80px] md:ml-[250px] p-8" style={{ backgroundColor: colors.light, minHeight: '100vh' }}>
-        <h1 className="text-2xl md:text-3xl font-bold mb-6" style={{ color: colors.dark }}>
-          <BsShieldExclamation className="inline-block mr-2 mb-1" style={{ color: colors.warning }} />
-          Flagged Content Management
-        </h1>
-        
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader />
+    <div>
+      <AdminHeader />
+      <div className="w-full flex">
+        <div className="flex items-start justify-between w-full">
+          <div className="w-[80px] 800px:w-[330px]">
+            <AdminSideBar active={10} />
           </div>
-        ) : error ? (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md">
-            <p>{error}</p>
+          <div className="flex-1 p-8" style={{ backgroundColor: colors.light, minHeight: '100vh' }}>
+            <h1 className="text-2xl md:text-3xl font-bold mb-6" style={{ color: colors.dark }}>
+              <BsShieldExclamation className="inline-block mr-2 mb-1" style={{ color: colors.warning }} />
+              Flagged Content Management
+            </h1>
+            
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader />
+              </div>
+            ) : error ? (
+              <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md">
+                <p>{error}</p>
+              </div>
+            ) : flaggedPosts.length === 0 ? (
+              <div className="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg shadow-md text-center">
+                <BsCheckCircle size={40} className="mx-auto mb-4 text-green-500" />
+                <h2 className="text-xl font-semibold mb-2 text-green-800">No Flagged Content</h2>
+                <p className="text-green-700">There are currently no flagged posts that require review.</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Post Title
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Author
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Flags
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date Flagged
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {flaggedPosts.map((post) => (
+                      <tr key={post._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium" style={{ color: colors.dark }}>
+                            {post.title.length > 50 ? post.title.substring(0, 50) + '...' : post.title}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm" style={{ color: colors.dark }}>{post.name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm" style={{ color: colors.dark }}>
+                            {post.flags ? post.flags.length : 1} {post.flags && post.flags.length === 1 ? 'flag' : 'flags'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {post.flags && post.flags[0] ? 
+                              formatDate(post.flags[0].flaggedAt) : 
+                              formatDate(post.updatedAt)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <button
+                            onClick={() => handleViewDetails(post)}
+                            className="px-3 py-1 rounded text-white transition-colors mr-2"
+                            style={{ backgroundColor: colors.primary }}
+                          >
+                            Review
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        ) : flaggedPosts.length === 0 ? (
-          <div className="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg shadow-md text-center">
-            <BsCheckCircle size={40} className="mx-auto mb-4 text-green-500" />
-            <h2 className="text-xl font-semibold mb-2 text-green-800">No Flagged Content</h2>
-            <p className="text-green-700">There are currently no flagged posts that require review.</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Post Title
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Author
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Flags
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date Flagged
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-             <tbody className="bg-white divide-y divide-gray-200">
-  {flaggedPosts.map((post) => (
-    <tr key={post._id} className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-medium" style={{ color: colors.dark }}>
-          {post.title.length > 50 ? post.title.substring(0, 50) + '...' : post.title}
         </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm" style={{ color: colors.dark }}>{post.name}</div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm" style={{ color: colors.dark }}>
-          {post.flags ? post.flags.length : 1} {post.flags && post.flags.length === 1 ? 'flag' : 'flags'}
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-500">
-          {post.flags && post.flags[0] ? 
-            formatDate(post.flags[0].flaggedAt) : 
-            formatDate(post.updatedAt)}
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm">
-        <button
-          onClick={() => handleViewDetails(post)}
-          className="px-3 py-1 rounded text-white transition-colors mr-2"
-          style={{ backgroundColor: colors.primary }}
-        >
-          Review
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-            </table>
-          </div>
-        )}
       </div>
       
       <PostDetailsModal />

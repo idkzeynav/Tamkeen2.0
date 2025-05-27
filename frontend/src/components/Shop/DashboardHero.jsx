@@ -27,13 +27,14 @@ const DashboardHero = () => {
     const { orders } = useSelector((state) => state.order);
     const { seller } = useSelector((state) => state.seller);
     const { products } = useSelector((state) => state.products);
-    const { services } = useSelector((state) => state.services);
+    const { shopServices } = useSelector((state) => state.services);
+     
     const [salesData, setSalesData] = useState([]);
     const [timeBasedData, setTimeBasedData] = useState([]);
     const [totalItemsSold, setTotalItemsSold] = useState(0);
     const [totalProfit, setTotalProfit] = useState(0);
     const [userStartDate, setUserStartDate] = useState("2024-01-01");
-    const [userEndDate, setUserEndDate] = useState("2025-12-31");
+    const [userEndDate, setUserEndDate] = useState("2026-12-31");
     const [activeCard, setActiveCard] = useState(null);
 
     const currentDate = new Date();
@@ -41,9 +42,11 @@ const DashboardHero = () => {
     const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
     const currentDay = String(currentDate.getDate()).padStart(2, '0');
 
-    const [interval, setInterval] = useState('daily');
+    // Changed default interval to 'yearly'
+    const [interval, setInterval] = useState('yearly');
     const [userDate, setUserDate] = useState(`${currentYear}-${currentMonth}-${currentDay}`);
     const [userMonth, setUserMonth] = useState(`${currentYear}-${currentMonth}`);
+    // Set default year to current year
     const [userYear, setUserYear] = useState(`${currentYear}`);
 
     // Memoize the fetch functions with useCallback to prevent unnecessary re-renders
@@ -65,7 +68,7 @@ const DashboardHero = () => {
             });
 
             setSalesData(formatSalesData(response.data.salesData));
-            setTimeBasedData(formatTimeBasedData(breakdownResponse.data.salesBreakdown));
+            setTimeBasedData(formatTimeBasedData(breakdownResponse.data.salesBreakdown, interval));
         } catch (error) {
             console.error("Error fetching sales data:", error);
             toast.error(error.response?.data?.message || "Error fetching sales data");
@@ -113,27 +116,51 @@ const DashboardHero = () => {
         }));
     };
 
-    const formatTimeBasedData = (data) => {
-        if (!data || typeof data !== 'object') {
-            console.warn("Invalid data format:", data);
-            return [];
+// Update the formatTimeBasedData function to handle interval-based formatting
+const formatTimeBasedData = (data, interval) => {
+    if (!data || typeof data !== 'object') {
+        console.warn("Invalid data format:", data);
+        return [];
+    }
+
+    const formattedData = [];
+    Object.keys(data).forEach((period) => {
+        let formattedPeriod = period;
+
+        // Format period based on the selected interval
+        if (interval === 'monthly') {
+            // Split YYYY-MM-DD into parts and format as DD-MM
+            const [year, month, day] = period.split('-');
+            if (year && month && day) {
+                formattedPeriod = `${day}-${month}`;
+            }
+        } else if (interval === 'yearly') {
+            // Convert YYYY-MM to MMM YYYY (e.g., "2024-05" -> "May 2024")
+            const [year, month] = period.split('-');
+            if (year && month) {
+                const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'short' });
+                formattedPeriod = `${monthName} ${year}`;
+            }
+        } else if (interval === 'daily') {
+            // Format as DD-MM if desired (optional)
+            const [year, month, day] = period.split('-');
+            if (year && month && day) {
+                formattedPeriod = `${day}-${month}`;
+            }
         }
 
-        const formattedData = [];
-        Object.keys(data).forEach((period) => {
-            Object.keys(data[period]).forEach((productId) => {
-                formattedData.push({
-                    period,
-                    product: data[period][productId].productName,
-                    quantity: data[period][productId].totalQuantity,
-                    profit: data[period][productId].totalProfit,
-                });
+        Object.keys(data[period]).forEach((productId) => {
+            formattedData.push({
+                period: formattedPeriod,
+                product: data[period][productId].productName,
+                quantity: data[period][productId].totalQuantity,
+                profit: data[period][productId].totalProfit,
             });
         });
+    });
 
-        // Limit the data to prevent overloading
-        return formattedData.slice(0, 50); 
-    };
+    return formattedData.slice(0, 50);
+};
 
     const COLORS = [
         '#ff9999', '#ffc658', '#82ca9d', '#8dd1e1', '#8884d8',
@@ -303,8 +330,9 @@ const DashboardHero = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#f7f1f1] p-8">
-            <div className="max-w-[1600px] mx-auto">
+        <div className="min-h-screen bg-[#f7f1f1] p-8 ml-[26px] w-[calc(100%-260px)]">
+            {/* Adjusted positioning to accommodate the fixed sidebar width */}
+            <div className="w-full">
                 <div className="flex justify-between items-center mb-8">
                     <h3 className="text-3xl font-bold text-[#5a4336]">
                         Dashboard Overview
@@ -335,11 +363,12 @@ const DashboardHero = () => {
                         link="/dashboard-orders"
                         linkText="View All Orders"
                     />
+                   
 
                     <StatCard
                         icon={MdStorefront}
                         title="Total Services"
-                        value={services?.length || 0}
+                        value={shopServices?.length || 0}
                         link="/dashboard-services"
                         linkText="View Services"
                     />

@@ -2,7 +2,7 @@ import axios from "axios";
 import { server } from "../../server";
 
 // Create a booking
-export const createBooking = (serviceId,userId, dates) => async (dispatch) => {
+export const createBooking = (serviceId, userId, bookingData) => async (dispatch) => {
   try {
     dispatch({ type: "createBookingRequest" });
 
@@ -10,7 +10,7 @@ export const createBooking = (serviceId,userId, dates) => async (dispatch) => {
 
     const { data } = await axios.post(
       `${server}/book/create-booking`,
-      { serviceId,userId, dates },
+      { serviceId, userId, ...bookingData },
       config
     );
 
@@ -46,6 +46,7 @@ export const getAllBookingsForSeller = (sellerId) => async (dispatch) => {
     });
   }
 };
+
 // Get all bookings for a user
 export const getUserBookings = (userId) => async (dispatch) => {
   try {
@@ -66,6 +67,7 @@ export const getUserBookings = (userId) => async (dispatch) => {
     });
   }
 };
+
 // Confirm booking
 export const confirmBooking = (bookingId) => async (dispatch) => {
   try {
@@ -85,3 +87,42 @@ export const confirmBooking = (bookingId) => async (dispatch) => {
   }
 };
 
+// Reject booking
+export const rejectBooking = (bookingId) => async (dispatch) => {
+  try {
+    dispatch({ type: "rejectBookingRequest" });
+
+    const { data } = await axios.put(`${server}/book/reject-booking/${bookingId}`);
+
+    dispatch({
+      type: "rejectBookingSuccess",
+      payload: data.booking,
+    });
+  } catch (error) {
+    dispatch({
+      type: "rejectBookingFail",
+      payload: error.response.data.message,
+    });
+  }
+};
+
+
+// Add to booking.js actions file
+// Cancel booking
+export const cancelBooking = (bookingId) => async (dispatch) => {
+  try {
+    dispatch({ type: "cancelBookingRequest" });
+
+    const { data } = await axios.put(`${server}/book/cancel-booking/${bookingId}`);
+
+    dispatch({
+      type: "cancelBookingSuccess",
+      payload: data.booking,
+    });
+  } catch (error) {
+    dispatch({
+      type: "cancelBookingFail",
+      payload: error.response.data.message,
+    });
+  }
+};

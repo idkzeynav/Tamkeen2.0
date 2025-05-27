@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, User, Phone, MapPin, Hash, Globe } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { server } from '../../server';
 import { toast } from 'react-toastify';
 import { RxAvatar } from 'react-icons/rx';
+import { FcGoogle } from 'react-icons/fc';
 
 const ShopCreate = () => {
     const navigate = useNavigate();
@@ -19,6 +20,36 @@ const ShopCreate = () => {
     const [password, setPassword] = useState("");
     const [visible, setVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+    // Handle Google OAuth redirect
+    useEffect(() => {
+        // Check if we're being redirected from Google OAuth
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        const errorMessage = urlParams.get('message');
+
+        if (error) {
+            switch (error) {
+                case 'email_required':
+                    toast.error('Email is required for Google signup. Please ensure your Google account has an email.');
+                    break;
+                case 'auth_failed':
+                    toast.error(errorMessage ? decodeURIComponent(errorMessage) : 'Google authentication failed. Please try again.');
+                    break;
+                case 'no_shop':
+                    toast.error('Unable to create shop account. Please try again.');
+                    break;
+                case 'token_failed':
+                    toast.error('Authentication token error. Please try again.');
+                    break;
+                default:
+                    toast.error('Authentication error. Please try again.');
+            }
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -34,13 +65,13 @@ const ShopCreate = () => {
         newForm.append("address", address);
        
         // Only append region if it has a value
-    if (region) {
-      newForm.append("region", region);
-  }
-  
-  if (area) {
-      newForm.append("area", area);
-  }
+        if (region) {
+            newForm.append("region", region);
+        }
+        
+        if (area) {
+            newForm.append("area", area);
+        }
         newForm.append("phoneNumber", phoneNumber);
 
         try {
@@ -62,6 +93,15 @@ const ShopCreate = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleGoogleSignup = () => {
+        setIsGoogleLoading(true);
+        // Store the current page to redirect back after Google auth
+        sessionStorage.setItem('redirectAfterAuth', '/shop-create');
+        
+        // Redirect to Google OAuth
+        window.location.href = `${server}/shop/auth/google`;
     };
 
     const handleFileInputChange = (e) => {
@@ -90,6 +130,44 @@ const ShopCreate = () => {
 
                     <h2 className="text-center text-2xl font-bold text-gray-800 mb-6">Create your Shop</h2>
 
+                    {/* Google Signup Button */}
+                    <div className="mb-6">
+                        <button
+                            type="button"
+                            onClick={handleGoogleSignup}
+                            disabled={isGoogleLoading}
+                            className="w-full py-3 px-4 bg-white border-2 border-gray-200 text-gray-700 font-medium rounded-lg 
+                                     flex items-center justify-center space-x-3 hover:bg-gray-50 hover:border-gray-300
+                                     disabled:opacity-70 disabled:cursor-not-allowed
+                                     transform hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg"
+                        >
+                            {isGoogleLoading ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Connecting...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <FcGoogle className="w-5 h-5" />
+                                    <span>Continue with Google</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="relative mb-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white text-gray-500">Or create manually</span>
+                        </div>
+                    </div>
+
                     <form onSubmit={handleSubmit} className="space-y-6 animate-slideUp">
                         {/* Shop Name Input */}
                         <div className="input-container group">
@@ -100,6 +178,7 @@ const ShopCreate = () => {
                                 onChange={(e) => setName(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:border-[#a67d6d] focus:ring-2 focus:ring-[#d8c4b8] transition-all duration-300 outline-none hover:shadow-lg"
                                 placeholder="Shop Name"
+                                required
                             />
                             <div className="input-glow"></div>
                         </div>
@@ -113,6 +192,7 @@ const ShopCreate = () => {
                                 onChange={(e) => setPhoneNumber(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:border-[#a67d6d] focus:ring-2 focus:ring-[#d8c4b8] transition-all duration-300 outline-none hover:shadow-lg"
                                 placeholder="Phone Number"
+                                required
                             />
                             <div className="input-glow"></div>
                         </div>
@@ -126,6 +206,7 @@ const ShopCreate = () => {
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:border-[#a67d6d] focus:ring-2 focus:ring-[#d8c4b8] transition-all duration-300 outline-none hover:shadow-lg"
                                 placeholder="Email"
+                                required
                             />
                             <div className="input-glow"></div>
                         </div>
@@ -139,6 +220,7 @@ const ShopCreate = () => {
                                 onChange={(e) => setAddress(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:border-[#a67d6d] focus:ring-2 focus:ring-[#d8c4b8] transition-all duration-300 outline-none hover:shadow-lg"
                                 placeholder="Address"
+                                required
                             />
                             <div className="input-glow"></div>
                         </div>
@@ -152,6 +234,7 @@ const ShopCreate = () => {
                                 onChange={(e) => setZipCode(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:border-[#a67d6d] focus:ring-2 focus:ring-[#d8c4b8] transition-all duration-300 outline-none hover:shadow-lg"
                                 placeholder="Zip Code"
+                                required
                             />
                             <div className="input-glow"></div>
                         </div>
@@ -191,6 +274,7 @@ const ShopCreate = () => {
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full pl-10 pr-12 py-3 rounded-lg border border-gray-200 focus:border-[#a67d6d] focus:ring-2 focus:ring-[#d8c4b8] transition-all duration-300 outline-none hover:shadow-lg"
                                 placeholder="Password"
+                                required
                             />
                             <button
                                 type="button"
@@ -216,6 +300,8 @@ const ShopCreate = () => {
                                     id="file-input"
                                     onChange={handleFileInputChange}
                                     className="sr-only"
+                                    accept="image/*"
+                                    required
                                 />
                             </label>
                             {avatar && (
@@ -230,7 +316,7 @@ const ShopCreate = () => {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || isGoogleLoading}
                             className="w-full py-3 px-4 bg-gradient-to-r from-[#a67d6d] to-[#5a4336] text-white font-medium rounded-lg 
                                      relative overflow-hidden button-shine hover:shadow-xl 
                                      disabled:opacity-70 disabled:cursor-not-allowed
@@ -263,8 +349,6 @@ const ShopCreate = () => {
             </div>
 
             <style jsx>{`
-                /* Existing styles from previous component */
-                
                 /* Custom Animations */
                 @keyframes fadeIn {
                     from { opacity: 0; }
@@ -291,6 +375,125 @@ const ShopCreate = () => {
 
                 .animate-slideUp {
                     animation: slideUp 0.5s ease-out 0.3s backwards;
+                }
+
+                /* Floating animations for background elements */
+                @keyframes butterfly {
+                    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+                    25% { transform: translate(20px, -20px) rotate(5deg); }
+                    50% { transform: translate(-10px, -40px) rotate(-5deg); }
+                    75% { transform: translate(-30px, -10px) rotate(3deg); }
+                }
+
+                @keyframes float {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-20px); }
+                }
+
+                .butterfly {
+                    position: absolute;
+                    width: 20px;
+                    height: 20px;
+                    background: radial-gradient(circle, rgba(200, 164, 165, 0.6), rgba(166, 125, 109, 0.4));
+                    border-radius: 50%;
+                    animation: butterfly 8s ease-in-out infinite;
+                }
+
+                .butterfly1 { top: 20%; left: 10%; animation-delay: 0s; }
+                .butterfly2 { top: 60%; right: 15%; animation-delay: 2s; }
+                .butterfly3 { bottom: 30%; left: 20%; animation-delay: 4s; }
+
+                .floating-circle {
+                    position: absolute;
+                    border-radius: 50%;
+                    background: linear-gradient(45deg, rgba(216, 196, 184, 0.3), rgba(200, 164, 165, 0.2));
+                    animation: float 6s ease-in-out infinite;
+                }
+
+                .circle1 { 
+                    width: 60px; 
+                    height: 60px; 
+                    top: 15%; 
+                    right: 20%; 
+                    animation-delay: 0s; 
+                }
+                .circle2 { 
+                    width: 40px; 
+                    height: 40px; 
+                    bottom: 20%; 
+                    right: 30%; 
+                    animation-delay: 2s; 
+                }
+                .circle3 { 
+                    width: 80px; 
+                    height: 80px; 
+                    top: 50%; 
+                    left: 5%; 
+                    animation-delay: 4s; 
+                }
+
+                /* Input glow effect */
+                .input-container {
+                    position: relative;
+                }
+
+                .input-glow {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    border-radius: 0.5rem;
+                    background: linear-gradient(45deg, rgba(200, 164, 165, 0.2), rgba(216, 196, 184, 0.2));
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                    pointer-events: none;
+                }
+
+                .input-container:hover .input-glow {
+                    opacity: 1;
+                }
+
+                /* Button shine effect */
+                .button-shine {
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .button-shine::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+                    transition: left 0.5s;
+                }
+
+                .button-shine:hover::before {
+                    left: 100%;
+                }
+
+                /* Link shine effect */
+                .link-shine {
+                    position: relative;
+                    display: inline-block;
+                }
+
+                .link-shine::after {
+                    content: '';
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 0;
+                    height: 2px;
+                    background: linear-gradient(90deg, #a67d6d, #5a4336);
+                    transition: width 0.3s ease;
+                }
+
+                .link-shine:hover::after {
+                    width: 100%;
                 }
             `}</style>
         </div>

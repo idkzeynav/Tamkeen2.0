@@ -35,7 +35,7 @@ const ExportOrdersButton = ({ orders }) => {
     // Add styled header row
     excelContent += '<tr>';
     csvHeader.forEach(header => {
-      excelContent += `<th style="background-color: ${themeColors.primary}; color: ${themeColors.dark}; font-weight: bold; padding: 8px; text-align: center; border: 1px solid ${themeColors.secondary};">${header}</th>`;
+      excelContent += `<th style="background-color: ${themeColors.primary}; color: ${themeColors}; font-weight: bold; padding: 8px; text-align: center; border: 1px solid ${themeColors.secondary};">${header}</th>`;
     });
     excelContent += '</tr>';
     
@@ -76,7 +76,7 @@ const ExportOrdersButton = ({ orders }) => {
   return (
     <button 
       onClick={exportToCSV}
-      className="bg-[#c8a4a5] hover:bg-[#b89293] text-[#5a4336] font-semibold p-2 px-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 flex items-center gap-2 border border-[#5a4336]"
+      className="bg-[#fff] hover:bg-[#b89293] text-[#5a4336] font-semibold p-2 px-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 flex items-center gap-2 border border-[#5a4336]"
     >
       <AiOutlineDownload size={18} />
       <span>Export Excel</span>

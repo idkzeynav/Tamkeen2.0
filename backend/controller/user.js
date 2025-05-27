@@ -14,6 +14,8 @@ const { isAuthenticated, isAdmin } = require("../middleware/auth");
 require("../middleware/auth");
 const crypto = require("crypto");
 const router = express.Router();
+const passport = require('passport');
+
 
 router.post("/create-user", upload.single("file"), async (req, res, next) => {
   try {
@@ -323,35 +325,31 @@ router.get(
 );
 
 // Update user info
+// Update user info - FIXED: Removed password requirement
 router.put(
   "/update-user-info",
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { email, password, phoneNumber, name } = req.body;
+      const { email, phoneNumber, name } = req.body;
 
-      const user = await User.findOne({ email }).select("+password");
+      // Find the authenticated user directly using req.user.id
+      const user = await User.findById(req.user.id);
 
       if (!user) {
         return next(new ErrorHandler("User not found", 400));
       }
 
-      const isPasswordValid = await user.comparePassword(password);
-
-      if (!isPasswordValid) {
-        return next(
-          new ErrorHandler("Please provide the correct information", 400)
-        );
-      }
-
-      user.name = name;
-      user.email = email;
-      user.phoneNumber = phoneNumber;
+      // Update user information directly without password verification
+      user.name = name || user.name;
+      user.email = email || user.email;
+      user.phoneNumber = phoneNumber || user.phoneNumber;
 
       await user.save();
 
       res.status(201).json({
         success: true,
+        message: "Profile updated successfully!",
         user,
       });
     } catch (error) {
@@ -359,7 +357,6 @@ router.put(
     }
   })
 );
-
 // Update user avatar
 router.put(
   "/update-avatar",
@@ -508,8 +505,6 @@ router.get(
     }
   })
 );
-
-
 
 router.get(
   "/admin-all-users",
@@ -684,6 +679,116 @@ router.put(
     });
   })
 );
+
+// Google OAuth routes
+router.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] ,
+        prompt: "select_account" // 👈 Lets user pick account
+  })
+);
+
+// Google OAuth callback
+// In your routes file
+router.get(
+  "/auth/google/callback",
+  (req, res, next) => {
+    passport.authenticate("google", (err, user, info) => {
+      console.log('=== Google Auth Callback Debug ===');
+      console.log('Query params:', req.query);
+      console.log('Error:', err);
+      console.log('User:', user ? { id: user._id, email: user.email, googleId: user.googleId } : null);
+      console.log('Info:', info);
+      console.log('=====================================');
+      
+      if (err) {
+        console.error('Authentication error:', err);
+        // More specific error handling
+        if (err.message.includes('email')) {
+          return res.redirect(`${process.env.CLIENT_URL}/login?error=email_required`);
+        }
+        return res.redirect(`${process.env.CLIENT_URL}/login?error=auth_failed&message=${encodeURIComponent(err.message)}`);
+      }
+      
+      if (!user) {
+        console.error('No user returned from authentication');
+        return res.redirect(`${process.env.CLIENT_URL}/login?error=no_user`);
+      }
+      
+      try {
+        // Generate JWT token
+        const token = user.getJwtToken();
+        console.log('Generated token for user:', user.email);
+        
+        // Redirect with token in hash
+        const redirectUrl = `${process.env.CLIENT_URL}/login#token=${token}`;
+        console.log('Redirecting to:', redirectUrl);
+        
+        res.redirect(redirectUrl);
+      } catch (tokenError) {
+        console.error('Token generation error:', tokenError);
+        return res.redirect(`${process.env.CLIENT_URL}/login?error=token_failed`);
+      }
+    })(req, res, next);
+  }
+);
+
+router.post(
+  "/check-email",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      console.log('Checking email:', email);
+      
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required'
+        });
+      }
+      
+      const user = await User.findOne({ email: email.toLowerCase().trim() });
+      console.log('Email check result:', user ? 'Found' : 'Not found');
+      
+      if (user) {
+        return res.status(200).json({
+          exists: true,
+          isGoogleLinked: !!user.googleId,
+          isActive: user.isActive
+        });
+      }
+      
+      res.status(200).json({
+        exists: false
+      });
+    } catch (error) {
+      console.error('Email check error:', error);
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+// Add a debug route to test user lookup
+router.get("/debug/user/:email", catchAsyncErrors(async (req, res) => {
+  try {
+    const email = req.params.email;
+    const user = await User.findOne({ email });
+    
+    res.json({
+      found: !!user,
+      user: user ? {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        googleId: user.googleId,
+        isActive: user.isActive,
+        role: user.role
+      } : null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}));
 
 
 module.exports = router;

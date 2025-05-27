@@ -627,7 +627,7 @@ const CreateWorkshop = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#d8c4b8]">
+    <div className="min-h-screen bg-[#f7f1f1]">
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-xl p-8">
           <h2 className="text-3xl font-bold mb-8 text-[#5a4336] border-b border-[#a67d6d]/20 pb-4">

@@ -91,23 +91,35 @@ const ProfileContent = ({ active }) => {
     const { user, error, successMessage } = useSelector((state) => state.user);
     const [name, setName] = useState(user && user.name);
     const [email, setEmail] = useState(user && user.email);
-    const [phoneNumber, setPhoneNumber] = useState(user && user.phoneNumber);
+   const [phoneNumber, setPhoneNumber] = useState(user && user.phoneNumber ? String(user.phoneNumber) : "");
     const [password, setPassword] = useState("");
     const [avatar, setAvatar] = useState(null);
   const [phoneError, setPhoneError] = useState("");
 
     const dispatch = useDispatch();
-
-    useEffect(() => {
+  useEffect(() => {
         if (error) {
             toast.error(error);
             dispatch({ type: "clearErrors" });
         }
         if (successMessage) {
             toast.success(successMessage);
-            dispatch({ type: "clearMessages" });
+            // Add a small delay before clearing the message
+            setTimeout(() => {
+                dispatch({ type: "clearMessages" });
+            }, 100);
         }
-    }, [error, successMessage]);
+    }, [error, successMessage, dispatch]);
+
+     // Separate effect to update local state when user data changes
+    useEffect(() => {
+        if (user) {
+            setName(user.name || '');
+            setEmail(user.email || '');
+            setPhoneNumber(user.phoneNumber ? String(user.phoneNumber) : '');
+        }
+    }, [user]);
+
  const validatePhone = (phone) => {
   const phoneRegex = /^03\d{9}$/; // Must start with 03 and have 11 digits total
   if (!phone) return true; // Allow empty phone
@@ -121,7 +133,7 @@ const ProfileContent = ({ active }) => {
 
 
   const handlePhoneChange = (e) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 11); // Only allow digits and max 10
+    const value = e.target.value.replace(/\D/g, "").slice(0, 11); 
     setPhoneNumber(value);
     validatePhone(value);
   };
@@ -129,7 +141,23 @@ const ProfileContent = ({ active }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        dispatch(updateUserInformation(name, email, phoneNumber, password));
+       // Validate phone before submitting
+        if (phoneNumber && !validatePhone(phoneNumber)) {
+            toast.error("Please enter a valid phone number");
+            return;
+        }
+
+        // Call the action without password
+         try {
+            // Call the action and show success message
+            dispatch(updateUserInformation(name, email, phoneNumber));
+            
+            // Show success toast regardless of Redux state
+            toast.success("Profile updated successfully!");
+        } catch (error) {
+            // Error is handled by the useEffect above
+            console.error("Update failed:", error);
+        }
     }
 
     // Image update
@@ -230,24 +258,12 @@ const ProfileContent = ({ active }) => {
                         type="text"
                         value={phoneNumber}
                         onChange={handlePhoneChange}
-                        placeholder="10-digit number"
+                        placeholder="11-digit number"
                         className="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition"
                       />
                       {phoneError && (
                         <p className="text-red-500 text-xs mt-1">{phoneError}</p>
                       )}
-                    </div>
-
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Password</label>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password to save changes"
-                        className="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl shadow-inner focus:ring-2 focus:ring-[#c8a4a5] focus:border-transparent transition"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">Required to save changes</p>
                     </div>
                   </div>
                   

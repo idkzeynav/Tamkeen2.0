@@ -3,7 +3,7 @@ import { Search, Filter, PlayCircle, ChevronLeft, Menu, BookOpen } from 'lucide-
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { server } from '../../server';
+import { server, backend_url } from '../../server'; // Added backend_url import
 import Footer from '../Layout/Footer';
 import Header from '../Layout/Header';
 
@@ -108,10 +108,29 @@ const UserWorkshopView = () => {
     return '';
   };
 
+  // Function to get the correct thumbnail - prioritize custom thumbnail over YouTube thumbnail
+  const getThumbnail = (workshop) => {
+    // Check if there's a custom thumbnail for the first video
+    const firstVideo = workshop.videos?.[0];
+    if (firstVideo?.thumbnail) {
+      // If thumbnail starts with '/', it's a custom uploaded thumbnail
+      if (firstVideo.thumbnail.startsWith('/')) {
+        return `${backend_url}${firstVideo.thumbnail}`;
+      }
+      // If it's already a full URL (YouTube thumbnail), use it as is
+      return firstVideo.thumbnail;
+    }
+    
+    // Fallback to YouTube thumbnail if no custom thumbnail
+    const firstVideoUrl = firstVideo?.youtubeUrl || '';
+    const videoId = getVideoId(firstVideoUrl);
+    return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : null;
+  };
+
   // Simple header section with navigation without animation
   const SimpleHeader = () => (
     <div className="relative py-6 mb-8 bg-[#f7f1f1]">
-      <Header />
+      <Header activeHeading={6} />
       
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
@@ -119,7 +138,6 @@ const UserWorkshopView = () => {
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-[#5a4336] hover:text-[#a67d6d] transition-colors duration-300"
           >
-     
             
           </button>
 
@@ -225,8 +243,7 @@ const UserWorkshopView = () => {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {workshops.map((workshop, index) => {
-              const firstVideoUrl = workshop.videos && workshop.videos[0] ? workshop.videos[0].youtubeUrl : '';
-              const videoId = getVideoId(firstVideoUrl);
+              const thumbnailUrl = getThumbnail(workshop);
               
               return (
                 <motion.div
@@ -238,16 +255,41 @@ const UserWorkshopView = () => {
                     delay: index * 0.1,
                     ease: "easeOut"
                   }}
+                  className="h-full" // Make parent full height
                 >
-                  <Link to={`/workshopdetail/${workshop._id}`} className="group block">
+                  <Link to={`/workshopdetail/${workshop._id}`} className="group block h-full">
                     <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all 
-                                duration-500 hover:scale-[1.02] hover:shadow-xl">
-                      <div className="aspect-w-16 aspect-h-9 relative">
-                        <img
-                          src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-                          alt={workshop.name}
-                          className="w-full h-48 object-cover"
-                        />
+                                duration-500 hover:scale-[1.02] hover:shadow-xl flex flex-col h-full">
+                      {/* Thumbnail image - fixed height */}
+                      <div className="relative w-full h-48">
+                        {thumbnailUrl ? (
+                          <img
+                            src={thumbnailUrl}
+                            alt={workshop.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to YouTube thumbnail if custom thumbnail fails
+                              const firstVideo = workshop.videos?.[0];
+                              const videoId = getVideoId(firstVideo?.youtubeUrl || '');
+                              if (videoId) {
+                                e.target.src = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+                              } else {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-400">No thumbnail available</span>
+                          </div>
+                        )}
+                        
+                        {/* Fallback div (hidden by default) */}
+                        <div className="w-full h-full bg-gray-200 items-center justify-center hidden">
+                          <span className="text-gray-400">No thumbnail available</span>
+                        </div>
+
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 
                                     transition-opacity duration-500 flex items-center justify-center">
                           <div className="flex items-center gap-2">
@@ -258,21 +300,34 @@ const UserWorkshopView = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="p-4 bg-gradient-to-b from-white to-[#d8c4b8]/20">
-                        <h2 className="text-xl font-semibold text-[#5a4336] mb-2">{workshop.name}</h2>
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-[#a67d6d] mb-3">
-                          <span className="px-2 py-1 bg-[#d8c4b8]/30 rounded-full">{workshop.category}</span>
-                          <span>•</span>
-                          <span className="px-2 py-1 bg-[#c8a4a5]/30 rounded-full">{workshop.level}</span>
-                          <span>•</span>
-                          <span>{workshop.totalDuration}</span>
-                        </div>
-                        <p className="text-[#5a4336] line-clamp-2 mb-4">{workshop.description}</p>
-                        {workshop.requirements && (
-                          <div className="text-sm text-[#a67d6d]">
-                            <strong>Requirements:</strong> {workshop.requirements}
+
+                      {/* Content area - fixed height with scrollable description */}
+                      <div className="p-4 bg-gradient-to-b from-white to-[#d8c4b8]/20 flex-1 flex flex-col">
+                        {/* Fixed height header section */}
+                        <div className="mb-2">
+                          <h2 className="text-xl font-semibold text-[#5a4336] mb-2 line-clamp-1">{workshop.name}</h2>
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-[#a67d6d] mb-3">
+                            <span className="px-2 py-1 bg-[#d8c4b8]/30 rounded-full">{workshop.category}</span>
+                            <span>•</span>
+                            <span className="px-2 py-1 bg-[#c8a4a5]/30 rounded-full">{workshop.level}</span>
+                            <span>•</span>
+                            <span>{workshop.totalDuration}</span>
                           </div>
-                        )}
+                        </div>
+                        
+                        {/* Scrollable description area with fixed height */}
+                        <div className="flex-1 flex flex-col overflow-hidden">
+                          <p className="text-[#5a4336] line-clamp-2 mb-4">{workshop.description}</p>
+                          
+                          {/* Fixed position for requirements */}
+                          <div className="mt-auto">
+                            {workshop.requirements && (
+                              <div className="text-sm text-[#a67d6d] line-clamp-1">
+                                <strong>Requirements:</strong> {workshop.requirements}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </Link>

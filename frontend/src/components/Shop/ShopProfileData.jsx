@@ -66,7 +66,7 @@ const ShopProfileData = ({ isOwner }) => {
                         allReviews.map((item, index) => (
                             <div className="flex items-start my-4 p-4 bg-white rounded-lg shadow-md hover:shadow-xl transition duration-300" key={index}>
                                 <img
-                                    src={`${item.user.avatar}`}
+                                    src={`${backend_url}${item.user.avatar}`}
                                     className="w-12 h-12 rounded-full"
                                     alt="User Avatar"
                                 />

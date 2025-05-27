@@ -15,7 +15,19 @@ const AcceptedBulkOrders = () => {
   }, [dispatch, seller._id]);
 
   if (isLoading) return <Loader />;
-  if (error) return <div className="text-center mt-20 text-xl text-red-500">Error: {error}</div>;
+  
+  // Only show error if it's a real error, not "no orders found"
+  if (error && !error.includes('No accepted bulk orders found')) {
+    return (
+      <div className="w-full px-8 py-6 bg-[#e6d8d8] min-h-screen">
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <div className="text-center mt-20 text-xl text-red-500">
+            Error: {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full px-8 py-6 bg-[#e6d8d8] min-h-screen">
@@ -27,9 +39,17 @@ const AcceptedBulkOrders = () => {
           Review the bulk orders and manage them seamlessly!
         </p>
 
-        {acceptedBulkOrders.length === 0 ? (
-          <div className="text-center text-[#5a4336] text-lg">
-            No accepted orders found for this shop.
+        {(!acceptedBulkOrders || acceptedBulkOrders.length === 0) ? (
+          <div className="text-center py-12">
+            <div className="bg-[#f8f3f1] rounded-lg p-8 max-w-md mx-auto">
+              <div className="text-[#5a4336] text-lg mb-2">
+                📋 No Accepted Orders Yet
+              </div>
+              <p className="text-[#8b7355] text-sm">
+                You haven't accepted any bulk orders for this shop yet. 
+                Once you accept orders, they'll appear here for management.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto bg-[#f8f3f1] rounded-lg shadow">

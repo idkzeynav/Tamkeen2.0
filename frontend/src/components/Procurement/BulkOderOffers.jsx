@@ -1,203 +1,314 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { getBulkOrderOffers } from "../../redux/actions/bulkOrderActions";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import { 
-  Package, 
-  Eye, 
-  Clock, 
-  Mail, 
-  Store, 
-  CreditCard,
-  Loader2, 
-  CheckCircle2,
-  AlertCircle,
-  ArrowUpDown
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { createBulkOrder } from '../../redux/actions/bulkOrderActions';
+import { categoriesData } from '../../static/data';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle, Upload, AlertCircle, X, Image } from 'lucide-react';
 
-const BulkOrderOffers = () => {
-  const { bulkOrderId } = useParams();
+const BulkOrderForm = () => {
+  const { user } = useSelector((state) => state.user);
+  const { success, error } = useSelector((state) => state.bulkOrderReducer);
   const dispatch = useDispatch();
-  const { offers = [], isLoading } = useSelector((state) => state.bulkOrderReducer);
   const navigate = useNavigate();
-  const [acceptedOfferId, setAcceptedOfferId] = useState(null);
-  const [bulkOrderStatus, setBulkOrderStatus] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  
+  const [formData, setFormData] = useState({
+    productName: '',
+    description: '',
+    quantity: '',
+    category: '',
+    budget: '',
+    deliveryDeadline: '',
+    shippingAddress: '',
+    packagingRequirements: '',
+    supplierLocationPreference: '',
+  });
+  
+  const [errors, setErrors] = useState({});
+  const [inspoPic, setInspoPic] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
-    dispatch(getBulkOrderOffers(bulkOrderId));
-    setAcceptedOfferId(null);
-  }, [dispatch, bulkOrderId]);
-
-  useEffect(() => {
-    const acceptedOffer = offers.find((offer) => offer.status === "Accepted");
-    if (acceptedOffer) {
-      setAcceptedOfferId(acceptedOffer._id);
+    if (error) {
+      toast.error(error);
+      setIsSubmitting(false);
     }
-    if (offers.length > 0 && offers[0].bulkOrderStatus) {
-      setBulkOrderStatus(offers[0].bulkOrderStatus);
+    if (success) {
+      setShowSuccess(true);
+      dispatch({ type: 'clearSuccess' }); // Clear the success state
+      setIsSubmitting(false);
+      setTimeout(() => {
+        navigate('/profile');
+      }, 3000);
     }
-  }, [offers]);
+  }, [error, success, dispatch, navigate]);
 
-  const handleAcceptOffer = (rfqId) => {
-    setAcceptedOfferId(rfqId);
-    navigate(`/bulkorderpayment/${rfqId}`);
-  };
-
-  const sortOffers = (key) => {
-    setSortConfig((current) => {
-      const newDirection = current.key === key && current.direction === 'asc' ? 'desc' : 'asc';
-      return { key, direction: newDirection };
-    });
-  };
-
-  const getSortedOffers = () => {
-    if (!sortConfig.key) return offers;
-
-    return [...offers].sort((a, b) => {
-      if (sortConfig.key === 'shopName') {
-        const aVal = a.shopId?.name || '';
-        const bVal = b.shopId?.name || '';
-        return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5000000) {
+        toast.error('Image size should be less than 5MB');
+        return;
       }
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-      return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
-    });
+      setInspoPic(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  if (isLoading) {
+  const removeImage = () => {
+    setInspoPic(null);
+    setImagePreview(null);
+    // Reset the file input
+    const fileInput = document.getElementById('file-upload');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.productName.trim()) newErrors.productName = 'Product name is required';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (!formData.quantity || formData.quantity <= 0) newErrors.quantity = 'Valid quantity is required';
+    if (!formData.category) newErrors.category = 'Category is required';
+    if (!formData.budget || formData.budget <= 0) newErrors.budget = 'Valid budget is required';
+    if (!formData.deliveryDeadline) newErrors.deliveryDeadline = 'Delivery deadline is required';
+    if (!formData.shippingAddress.trim()) newErrors.shippingAddress = 'Shipping address is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      toast.error('Please fill in all required fields correctly');
+      return;
+    }
+    setIsSubmitting(true);
+
+    const newForm = new FormData();
+    Object.keys(formData).forEach(key => {
+      newForm.append(key, formData[key]);
+    });
+    newForm.append('userId', user._id);
+    if (inspoPic) newForm.append('inspoPic', inspoPic);
+
+    await dispatch(createBulkOrder(newForm));
+  };
+
+  if (showSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#d8c4b8]/20 to-[#d8c4b8]/10 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-[#5a4336]">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span className="text-lg">Loading offers...</span>
+      <div className="min-h-screen bg-gradient-to-b from-[#d8c4b8]/20 to-[#d8c4b8]/10 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
+          <div className="mb-6">
+            <CheckCircle className="w-20 h-20 text-[#5a4336] mx-auto animate-bounce" />
+          </div>
+          <h2 className="text-3xl font-bold text-[#5a4336] mb-4">Order Placed Successfully!</h2>
+          <p className="text-[#a67d6d] mb-8 text-lg">
+            Your bulk order has been created and sent to relevant sellers. You'll receive updates soon.
+          </p>
+          <div className="w-full h-2 bg-[#d8c4b8] rounded-full overflow-hidden">
+            <div className="w-full h-full bg-[#5a4336] rounded-full animate-pulse"></div>
+          </div>
         </div>
       </div>
     );
   }
 
-  const SortHeader = ({ label, sortKey }) => (
-    <th className="px-6 py-4 font-semibold text-[#5a4336]">
-      <button 
-        onClick={() => sortOffers(sortKey)}
-        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-      >
-        {label}
-        <ArrowUpDown className="w-4 h-4" />
-      </button>
-    </th>
-  );
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#d8c4b8]/20 to-[#d8c4b8]/10 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
+          <AlertCircle className="w-16 h-16 text-[#5a4336] mx-auto mb-4" />
+          <h2 className="text-2xl text-[#5a4336] font-semibold">Authentication Required</h2>
+          <p className="text-[#a67d6d] mt-4">Please log in to create a bulk order</p>
+        </div>
+      </div>
+    );
+  }
+
+  const renderInput = (label, name, type = "text", placeholder, isTextarea = false, required = true) => {
+    const Component = isTextarea ? 'textarea' : 'input';
+    return (
+      <div className="mb-6">
+        <label className="block text-[#5a4336] text-sm font-semibold mb-2">
+          {label} {required && <span className="text-[#c8a4a5]">*</span>}
+        </label>
+        <Component
+          type={type}
+          placeholder={placeholder}
+          value={formData[name]}
+          onChange={(e) => setFormData({ ...formData, [name]: e.target.value })}
+          className={`w-full p-3 border-2 border-[#c8a4a5]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a67d6d] focus:border-transparent transition-all duration-200
+            ${errors[name] ? 'border-red-500 bg-red-50' : 'hover:border-[#c8a4a5]'} 
+            ${isTextarea ? 'h-32 resize-none' : ''}`}
+        />
+        {errors[name] && (
+          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+            <AlertCircle className="w-4 h-4" />
+            {errors[name]}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#d8c4b8]/20 to-[#d8c4b8]/10 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-[#c8a4a5] to-[#8c6c6b] p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <Package className="w-10 h-10 text-white" />
-              <h1 className="text-3xl font-bold text-white">Compare Bulk Order Offers</h1>
-            </div>
-            <p className="text-[#f5e6e0] text-lg">
-              Compare offers side by side to find the best match for your bulk order requirements.
+          <div className="bg-gradient-to-r from-[#c8a4a5] to-[#8c6c6b] text-white p-8">
+            <h1 className="text-4xl font-bold text-white text-center">Create Bulk Order</h1>
+            <p className="text-[#f5e6e0] mt-4 text-center text-lg">
+              Complete the form below to submit your bulk order request
             </p>
           </div>
+          
+          <form onSubmit={handleSubmit} className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {renderInput("Product Name", "productName", "text", "Enter product name")}
+              {renderInput("Description", "description", "text", "Describe your product requirements", true)}
+              
+              <div className="mb-6">
+                <label className="block text-[#5a4336] text-sm font-semibold mb-2">
+                  Category <span className="text-[#c8a4a5]">*</span>
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full p-3 border-2 border-[#c8a4a5]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a67d6d] focus:border-transparent transition-all duration-200 hover:border-[#c8a4a5]"
+                >
+                  <option value="">Select Category</option>
+                  {categoriesData.map((cat) => (
+                    <option key={cat.title} value={cat.title}>{cat.title}</option>
+                  ))}
+                </select>
+                {errors.category && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.category}
+                  </p>
+                )}
+              </div>
 
-          <div className="p-6">
-            {offers.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-[#d8c4b8]">
-                      <SortHeader label="Seller" sortKey="shopName" />
-                      <th className="px-6 py-4 font-semibold text-[#5a4336]">Contact</th>
-                      <SortHeader label="Price (Rs.)" sortKey="price" />
-                      <SortHeader label="Price Per Unit" sortKey="pricePerUnit" />
-                      <SortHeader label="Available Qty" sortKey="availableQuantity" />
-                      <SortHeader label="Delivery (Days)" sortKey="deliveryTime" />
-                      <th className="px-6 py-4 font-semibold text-[#5a4336]">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getSortedOffers().map((offer) => (
-                      <tr 
-                        key={offer._id} 
-                        className="border-b border-[#d8c4b8]/30 hover:bg-[#d8c4b8]/5 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Store className="w-5 h-5 text-[#5a4336]" />
-                            <span className="font-medium text-[#5a4336]">
-                              {offer.shopId?.name || "N/A"}
+              {renderInput("Quantity", "quantity", "number", "Enter quantity required")}
+              {renderInput("Budget", "budget", "number", "Enter your budget")}
+              {renderInput("Delivery Deadline", "deliveryDeadline", "date")}
+              {renderInput("Shipping Address", "shippingAddress", "text", "Enter shipping address")}
+              {renderInput("Packaging Requirements", "packagingRequirements", "text", "Specify packaging requirements", true, false)}
+              {renderInput("Supplier Location Preference", "supplierLocationPreference", "text", "Enter preferred supplier location", false, false)}
+              
+              <div className="mb-6">
+                <label className="block text-[#5a4336] text-sm font-semibold mb-2">Sample Image</label>
+                
+                {!imagePreview ? (
+                  <div className="border-2 border-dashed border-[#c8a4a5]/30 rounded-lg p-6 text-center hover:border-[#c8a4a5] transition-all duration-200">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <Upload className="w-8 h-8 text-[#a67d6d] mx-auto mb-2" />
+                      <p className="text-sm text-[#5a4336] font-medium">Click to upload or drag and drop</p>
+                      <p className="text-xs text-[#a67d6d] mt-1">PNG, JPG, GIF up to 5MB</p>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="border-2 border-[#c8a4a5]/30 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            className="w-20 h-20 object-cover rounded-lg border-2 border-white shadow-md"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Image className="w-4 h-4 text-[#5a4336]" />
+                            <span className="text-sm font-medium text-[#5a4336]">
+                              {inspoPic?.name || 'Image uploaded'}
                             </span>
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-[#a67d6d]">
-                            <Mail className="w-4 h-4" />
-                            <span>{offer.shopId?.email || "N/A"}</span>
+                          <p className="text-xs text-[#a67d6d]">
+                            Size: {inspoPic ? (inspoPic.size / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Ready to upload
+                            </span>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 font-medium text-[#5a4336]">
-                          {offer.price.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 font-medium text-[#5a4336]">
-                          {offer.pricePerUnit.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 font-medium text-[#5a4336]">
-                          {offer.availableQuantity.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 font-medium text-[#5a4336]">
-                          {offer.deliveryTime}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <Link
-                              to={`/offer-details/${offer._id}`}
-                              className="p-2 rounded-lg hover:bg-[#d8c4b8]/10 transition-colors"
-                            >
-                              <Eye className="w-5 h-5 text-[#5a4336]" />
-                            </Link>
-                            {offer._id === acceptedOfferId ? (
-                              <span className="flex items-center gap-2 text-green-600">
-                                <CheckCircle2 className="w-5 h-5" />
-                                Accepted
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => handleAcceptOffer(offer._id)}
-                                disabled={bulkOrderStatus === "Processing"}
-                                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 
-                                  ${bulkOrderStatus === "Processing"
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-[#c8a4a5] to-[#8c6c6b] text-white hover:opacity-90'
-                                  }`}
-                              >
-                                {bulkOrderStatus === "Processing" ? "Processing..." : "Accept"}
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeImage}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors duration-200"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Option to change image */}
+                    <div className="mt-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                        id="file-upload-change"
+                      />
+                      <label 
+                        htmlFor="file-upload-change" 
+                        className="inline-flex items-center gap-2 text-sm text-[#5a4336] hover:text-[#a67d6d] cursor-pointer transition-colors duration-200"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Change image
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <AlertCircle className="w-16 h-16 text-[#c8a4a5] mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-[#5a4336] mb-2">No Offers Yet</h3>
-                <p className="text-[#a67d6d]">
-                  There are currently no offers for this bulk order. 
-                  Please check back later.
-                </p>
-              </div>
-            )}
-          </div>
+            </div>
+
+            <div className="mt-8">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`w-full bg-gradient-to-r from-[#c8a4a5] to-[#8c6c6b] text-white py-4 px-6 rounded-lg text-lg font-semibold shadow-lg
+                  transform transition-all duration-200 hover:scale-[1.02] hover:shadow-xl
+                  ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </span>
+                ) : "Submit Bulk Order"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   );
 };
 
-export default BulkOrderOffers;
+export default BulkOrderForm;

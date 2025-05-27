@@ -40,12 +40,25 @@ const ProductCard = ({ data, isEvent }) => {
     toast.success("Item added to cart successfully!");
   };
 
+  // Helper function to get the correct image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return '';
+    
+    // If the image path is already a full URL, use it as is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // If it's a relative path, construct the full URL
+    return `${backend_url}${imagePath}`;
+  };
+
   return (
     <div className="group relative bg-white rounded-2xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl">
       <Link to={`${isEvent ? `/product/${data._id}?isEvent=true` : `/product/${data._id}`}`}>
         <div className="aspect-square overflow-hidden">
           <img
-            src={`${backend_url}${data.images?.[0]}`}
+            src={getImageUrl(data.images?.[0])}
             alt={data.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
@@ -77,44 +90,43 @@ const ProductCard = ({ data, isEvent }) => {
       </div>
 
       <div className="p-4">
-  <Link to={`/product/${data._id}`}>
-    {/* Product Name */}
-    <h3 className="font-medium text-[#5a4336] mb-2 line-clamp-2">
-      {data.name}
-    </h3>
+        <Link to={`/product/${data._id}`}>
+          {/* Product Name */}
+          <h3 className="font-medium text-[#5a4336] mb-2 line-clamp-2">
+            {data.name}
+          </h3>
 
-    {/* Ratings */}
-    <div className="mb-2">
-      <Ratings rating={data?.ratings} />
-    </div>
+          {/* Ratings */}
+          <div className="mb-2">
+            <Ratings rating={data?.ratings} />
+          </div>
 
-    {/* Price and Sold Out */}
-    <div className="flex items-center justify-between">
-      {/* Price Section */}
-      <div className="flex gap-2 items-center">
-        {/* Display Price */}
-        {data.discountPrice ? (
-          <>
-            <span className="text-lg font-bold text-[#a67d6d]">
-              {`${data.discountPrice} Rs`}
-            </span>
-            <span className="text-sm text-gray-500 line-through">
-              {`${data.originalPrice} Rs`}
-            </span>
-          </>
-        ) : (
-          <span className="text-lg font-bold text-[#a67d6d]">
-            {`${data.originalPrice} Rs`}
-          </span>
-        )}
+          {/* Price and Sold Out */}
+          <div className="flex items-center justify-between">
+            {/* Price Section */}
+            <div className="flex gap-2 items-center">
+              {/* Display Price */}
+              {data.discountPrice ? (
+                <>
+                  <span className="text-lg font-bold text-[#a67d6d]">
+                    {`${data.discountPrice} Rs`}
+                  </span>
+                  <span className="text-sm text-gray-500 line-through">
+                    {`${data.originalPrice} Rs`}
+                  </span>
+                </>
+              ) : (
+                <span className="text-lg font-bold text-[#a67d6d]">
+                  {`${data.originalPrice} Rs`}
+                </span>
+              )}
+            </div>
+
+            {/* Sold Out Section */}
+            <span className="text-xs text-[#c8a4a5]">{data?.sold_out} sold</span>
+          </div>
+        </Link>
       </div>
-
-      {/* Sold Out Section */}
-      <span className="text-xs text-[#c8a4a5]">{data?.sold_out} sold</span>
-    </div>
-  </Link>
-</div>
-
 
       {open && <ProductDetailsCard setOpen={setOpen} data={data} />}
     </div>

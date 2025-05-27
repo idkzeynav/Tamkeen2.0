@@ -3,45 +3,56 @@ import { Calendar } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
 const ServiceCalendar = ({ availability }) => {
-  const dayOfWeekMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday',
-'Thursday', 'Friday', 'Saturday'];
+  const dayOfWeekMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 
+    'Thursday', 'Friday', 'Saturday'];
 
   const tileContent = ({ date }) => {
     const dayOfWeek = dayOfWeekMap[date.getDay()];
     const availabilityEntry = availability[dayOfWeek];
 
     return availabilityEntry && availabilityEntry.available ? (
-      <div className="flex flex-col items-center absolute bottom-1
-left-0 right-0">
-        <div className="text-emerald-600 text-[10px] font-medium">
-          {availabilityEntry.startTime}
+      <div className="flex flex-col items-center">
+        <div className="text-emerald-600 text-xs font-medium">
+          {formatTimeDisplay(availabilityEntry.startTime)}
         </div>
-        <div className="text-emerald-600 text-[10px] font-medium">
-          {availabilityEntry.endTime}
+        <div className="text-emerald-600 text-xs font-medium">
+          {formatTimeDisplay(availabilityEntry.endTime)}
         </div>
       </div>
     ) : (
-      <div className="text-rose-500 text-[10px] font-medium absolute
-bottom-2 left-0 right-0">
+      <div className="text-rose-500 text-xs font-medium">
         Closed
       </div>
     );
   };
 
+  // Helper function to simplify time display
+  const formatTimeDisplay = (time) => {
+    // Convert "14:00" to "2p" and "09:30" to "9:30a" for more compact display
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'p' : 'a';
+    const displayHour = hour % 12 || 12;
+    
+    // Only show minutes if they're not zero
+    return minutes === '00' 
+      ? `${displayHour}${ampm}` 
+      : `${displayHour}:${minutes}${ampm}`;
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-[#faf5f1] rounded-2xl shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center text-[#5a4336]">
+    <div className="w-full mx-auto bg-[#faf5f1] rounded-2xl shadow-md">
+      <h2 className="text-lg font-semibold py-2 text-center text-[#5a4336]">
         Service Availability
       </h2>
       <div className="flex justify-center">
         <Calendar
           tileContent={tileContent}
-          className="custom-calendar"
+          className="compact-calendar"
           tileClassName={({ date }) => {
             const dayOfWeek = dayOfWeekMap[date.getDay()];
             const isAvailable = availability[dayOfWeek]?.available;
-            return `calendar-tile ${isAvailable ? 'available-tile' :
-'unavailable-tile'}`;
+            return `calendar-tile ${isAvailable ? 'available-tile' : 'unavailable-tile'}`;
           }}
           view="month"
           prevLabel="←"
@@ -51,24 +62,24 @@ bottom-2 left-0 right-0">
         />
       </div>
       <style jsx global>{`
-        .custom-calendar {
+        .compact-calendar {
           width: 100%;
-          max-width: 700px;
+          max-width: 100%;
           background: white;
           border: none;
           border-radius: 1rem;
-          padding: 1rem;
+          padding: 0.75rem;
           box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
           font-family: inherit;
         }
 
-        .custom-calendar .react-calendar__navigation {
-          margin-bottom: 1.5rem;
+        .compact-calendar .react-calendar__navigation {
+          margin-bottom: 0.5rem;
         }
 
-        .custom-calendar .react-calendar__navigation button {
+        .compact-calendar .react-calendar__navigation button {
           color: #5a4336;
-          font-size: 1.2rem;
+          font-size: 1rem;
           font-weight: 600;
           padding: 0.5rem;
           background: none;
@@ -76,41 +87,25 @@ bottom-2 left-0 right-0">
           transition: all 0.2s;
         }
 
-        .custom-calendar .react-calendar__navigation button:enabled:hover,
-        .custom-calendar .react-calendar__navigation button:enabled:focus {
-          background-color: #f3e8e3;
-        }
-
-        .custom-calendar .react-calendar__month-view__weekdays {
+        .compact-calendar .react-calendar__month-view__weekdays {
           color: #a67d6d;
           font-weight: 600;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          margin-bottom: 0.5rem;
+          font-size: 0.75rem;
+          margin-bottom: 0.25rem;
         }
 
-        .custom-calendar .react-calendar__month-view__weekdays abbr {
-          text-decoration: none;
-        }
-
-        .custom-calendar .react-calendar__tile {
-          aspect-ratio: 1;
-          height: 90px;
+        .compact-calendar .react-calendar__tile {
           max-width: none !important;
-          font-size: 0.9rem;
+          font-size: 0.75rem;
           color: #5a4336;
           border-radius: 0.5rem;
           transition: all 0.2s;
-          position: relative;
-          padding: 0.75rem 0.5rem;
+          padding: 0.25rem;
           display: flex;
           flex-direction: column;
           align-items: center;
-        }
-
-        .calendar-tile {
-          position: relative;
-          height: 100%;
+          justify-content: center;
+          height: 3rem;
         }
 
         .available-tile {
@@ -121,41 +116,18 @@ bottom-2 left-0 right-0">
           background-color: #fff1f1;
         }
 
-        .custom-calendar .react-calendar__tile:enabled:hover,
-        .custom-calendar .react-calendar__tile:enabled:focus {
-          background-color: #f3e8e3;
-        }
-
-        .custom-calendar .react-calendar__tile--active {
-          background-color: #f3e8e3 !important;
-          color: #5a4336 !important;
-          border: 2px solid #a67d6d !important;
-        }
-
-        .custom-calendar .react-calendar__tile--now {
-          background-color: #f3e8e3;
-          font-weight: bold;
-        }
-
-        .custom-calendar .react-calendar__month-view__days__day--weekend {
-          color: #a67d6d;
-        }
-
-        .custom-calendar
-.react-calendar__month-view__days__day--neighboringMonth {
-          color: #d8c4b8;
-        }
-
-        /* Fix the width of the month view */
-        .custom-calendar .react-calendar__month-view {
-          width: 100%;
-        }
-
-        /* Ensure days row takes full width */
-        .custom-calendar .react-calendar__month-view__days {
+        .compact-calendar .react-calendar__month-view__days {
           display: grid !important;
           grid-template-columns: repeat(7, 1fr);
-          gap: 0.5rem;
+          gap: 0.25rem;
+        }
+
+        @media (min-width: 768px) {
+          .compact-calendar .react-calendar__tile {
+            font-size: 0.875rem;
+            padding: 0.5rem;
+            height: 4rem;
+          }
         }
       `}</style>
     </div>

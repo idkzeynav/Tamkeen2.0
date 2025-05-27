@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { RxDashboard } from "react-icons/rx";
-import { FiPackage, FiShoppingBag } from "react-icons/fi";
-import { AiOutlineFolderAdd, AiOutlineInfoCircle, AiOutlineRight } from "react-icons/ai";
-import { BiMessageSquareDetail } from "react-icons/bi";
+import { FiPackage, FiShoppingBag, FiList, FiPlus } from "react-icons/fi";
+import { AiOutlineFolderAdd, AiOutlineInfoCircle, AiOutlineRight, AiOutlineShop } from "react-icons/ai";
+import { BiMessageSquareDetail, BiCalendarCheck } from "react-icons/bi";
 import { CiSettings } from "react-icons/ci";
-import { MdOutlineLocalOffer } from "react-icons/md";
+import { MdOutlineLocalOffer, MdOutlineHandyman, MdOutlineBusinessCenter } from "react-icons/md";
 import { GiBuyCard } from "react-icons/gi";
+import { BsTools, BsBookmark } from "react-icons/bs";
 
 const MenuItem = ({ icon: Icon, label, isActive, onClick, children, isOpen, showInfoIcon, onInfoClick }) => {
   return (
@@ -70,10 +71,19 @@ const DashboardSideBar = ({ active }) => {
     }));
   };
 
+  // Function to close all menus when a sub-item is clicked
+  const closeAllMenus = () => {
+    setOpenMenus({
+      products: false,
+      services: false,
+      procurement: false
+    });
+  };
+
   return (
-    <div className="w-[300px] h-[90vh] bg-white shadow-sm fixed top-[10vh] left-0 z-10">
+    <div className="w-[270px] h-[90vh] bg-white shadow-sm fixed top-[10vh] left-0 z-10">
       <div className="px-3 py-4 space-y-1">
-        <Link to="/dashboard">
+        <Link to="/dashboard" onClick={closeAllMenus}>
           <MenuItem 
             icon={RxDashboard} 
             label="Dashboard" 
@@ -81,7 +91,7 @@ const DashboardSideBar = ({ active }) => {
           />
         </Link>
 
-        <Link to="/dashboard-orders">
+        <Link to="/dashboard-orders" onClick={closeAllMenus}>
           <MenuItem 
             icon={FiShoppingBag} 
             label="All Orders" 
@@ -97,16 +107,16 @@ const DashboardSideBar = ({ active }) => {
           isOpen={openMenus.products}
           onClick={() => toggleMenu('products')}
         >
-          <Link to="/dashboard-products">
+          <Link to="/dashboard-products" onClick={closeAllMenus}>
             <MenuItem 
-              icon={FiPackage} 
+              icon={FiList} 
               label="All Products" 
               isActive={active === 3} 
             />
           </Link>
-          <Link to="/dashboard-create-product">
+          <Link to="/dashboard-create-product" onClick={closeAllMenus}>
             <MenuItem 
-              icon={AiOutlineFolderAdd} 
+              icon={FiPlus} 
               label="Add Product" 
               isActive={active === 4} 
             />
@@ -115,38 +125,38 @@ const DashboardSideBar = ({ active }) => {
 
         {/* Services Section */}
         <MenuItem 
-          icon={FiPackage} 
+          icon={BsTools} 
           label="Services" 
           isActive={active === 12 || active === 13 || active === 14}
           isOpen={openMenus.services}
           onClick={() => toggleMenu('services')}
         >
-          <Link to="/dashboard-services">
+          <Link to="/dashboard-services" onClick={closeAllMenus}>
             <MenuItem 
-              icon={FiPackage} 
+              icon={MdOutlineHandyman} 
               label="All Services" 
               isActive={active === 13} 
             />
           </Link>
-          <Link to="/dashboard-create-service">
+          <Link to="/dashboard-create-service" onClick={closeAllMenus}>
             <MenuItem 
               icon={AiOutlineFolderAdd} 
               label="Add Service" 
               isActive={active === 12} 
             />
           </Link>
-          <Link to="/dashboard-sellerbooking">
+          <Link to="/dashboard-sellerbooking" onClick={closeAllMenus}>
             <MenuItem 
-              icon={FiPackage} 
+              icon={BiCalendarCheck} 
               label="All Bookings" 
               isActive={active === 14} 
             />
           </Link>
         </MenuItem>
 
-        {/* Procurement Section - Fixed with properly aligned info icon */}
+        {/* Procurement Section - Updated with better icon alignment */}
         <MenuItem 
-          icon={AiOutlineFolderAdd} 
+          icon={MdOutlineBusinessCenter} 
           label="Procurement" 
           isActive={active === 17 || active === 18}
           isOpen={openMenus.procurement}
@@ -154,14 +164,14 @@ const DashboardSideBar = ({ active }) => {
           showInfoIcon={true}
           onInfoClick={() => setIsPopupVisible(true)}
         >
-          <Link to="/RFQ">
+          <Link to="/RFQ" onClick={closeAllMenus}>
             <MenuItem 
               icon={MdOutlineLocalOffer} 
               label="RFQ" 
               isActive={active === 17} 
             />
           </Link>
-          <Link to="/sellerbulkorders">
+          <Link to="/sellerbulkorders" onClick={closeAllMenus}>
             <MenuItem 
               icon={GiBuyCard} 
               label="Bulk Orders" 
@@ -170,7 +180,7 @@ const DashboardSideBar = ({ active }) => {
           </Link>
         </MenuItem>
 
-        <Link to="/dashboard-messages">
+        <Link to="/dashboard-messages" onClick={closeAllMenus}>
           <MenuItem 
             icon={BiMessageSquareDetail} 
             label="Shop Inbox" 
@@ -178,7 +188,7 @@ const DashboardSideBar = ({ active }) => {
           />
         </Link>
 
-        <Link to="/settings">
+        <Link to="/settings" onClick={closeAllMenus}>
           <MenuItem 
             icon={CiSettings} 
             label="Settings" 

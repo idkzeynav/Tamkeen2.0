@@ -9,6 +9,7 @@ import { serviceReducer } from "./reducers/servicesReducer";
 import { bookingReducer } from "./reducers/bookingReducer";
 import { bulkOrderReducer } from "./reducers/bulkOrderReducer";
 import { wholesaleMarketReducer } from "./reducers/wholesaleMarketReducer";
+import { serviceCategoryReducer } from "./reducers/serviceCategory";
 const Store = configureStore({
   reducer: {
     // Reducers
@@ -22,6 +23,7 @@ const Store = configureStore({
      bookings: bookingReducer, 
      bulkOrderReducer:bulkOrderReducer,
      wholesaleMarket: wholesaleMarketReducer,
+     serviceCategoryReducer:serviceCategoryReducer,
    
   },
 });

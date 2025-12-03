@@ -263,8 +263,7 @@ router.put(
   })
 );
 
-
-// Add this to your booking routes file (paste-2.txt)
+// Cancel booking (existing route)
 router.put(
   "/cancel-booking/:bookingId",
   catchAsyncErrors(async (req, res, next) => {
@@ -287,6 +286,43 @@ router.put(
     await booking.save();
 
     res.status(200).json({ success: true, message: "Booking canceled successfully", booking });
+  })
+);
+
+// NEW ROUTE: Mark booking as completed
+router.put(
+  "/complete-booking/:bookingId",
+  catchAsyncErrors(async (req, res, next) => {
+    const { bookingId } = req.params;
+    const { userRating, userReview } = req.body;
+    
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    // Check if booking is confirmed (only confirmed bookings can be completed)
+    if (booking.status !== "confirmed") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Only confirmed bookings can be marked as completed" 
+      });
+    }
+
+    // Update booking status and completion time
+    booking.status = "completed";
+    booking.completedAt = new Date();
+    
+   
+
+    await booking.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Booking marked as completed successfully", 
+      booking 
+    });
   })
 );
 

@@ -126,3 +126,28 @@ export const cancelBooking = (bookingId) => async (dispatch) => {
     });
   }
 };
+
+// NEW ACTION: Complete booking
+export const completeBooking = (bookingId, completionData) => async (dispatch) => {
+  try {
+    dispatch({ type: "completeBookingRequest" });
+
+    const config = { headers: { "Content-Type": "application/json" } };
+
+    const { data } = await axios.put(
+      `${server}/book/complete-booking/${bookingId}`,
+      completionData,
+      config
+    );
+
+    dispatch({
+      type: "completeBookingSuccess",
+      payload: data.booking,
+    });
+  } catch (error) {
+    dispatch({
+      type: "completeBookingFail",
+      payload: error.response ? error.response.data.message : "Something went wrong!",
+    });
+  }
+};

@@ -92,4 +92,18 @@ cancelBookingFail: (state, action) => {
   state.isLoading = false;
   state.error = action.payload;
 },
+  // NEW: Complete booking
+  completeBookingRequest: (state) => {
+    state.isLoading = true;
+  },
+  completeBookingSuccess: (state, action) => {
+    state.isLoading = false;
+    state.bookings = state.bookings.map((booking) =>
+      booking._id === action.payload._id ? action.payload : booking
+    );
+  },
+  completeBookingFail: (state, action) => {
+    state.isLoading = false;
+    state.error = action.payload;
+  },
 });

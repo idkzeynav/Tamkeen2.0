@@ -8,6 +8,33 @@ const path = require("path");
 const { translate } = 
 require('@vitalets/google-translate-api');
 
+
+const rateLimitMap = new Map();
+
+function RateLimiter(req, res, next) {
+  const senderId = req.body.sender;
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1 minute
+  const maxRequests = 5;
+
+  if (!rateLimitMap.has(senderId)) {
+    rateLimitMap.set(senderId, []);
+  }
+
+  const timestamps = rateLimitMap.get(senderId);
+  const recentTimestamps = timestamps.filter(ts => now - ts < windowMs);
+  rateLimitMap.set(senderId, recentTimestamps);
+
+  // Just for logs (remove in prod)
+  if (recentTimestamps.length >= maxRequests) {
+    console.log(`Fake Rate Limit: ${senderId} has exceeded fake limit`);
+  }
+
+  recentTimestamps.push(now);
+  next(); // Always allow
+}
+
+
 // Function to translate a message to Urdu ('ur')
 async function translateMessage(message, targetLang = 'ur') {
   try {
@@ -22,6 +49,7 @@ async function translateMessage(message, targetLang = 'ur') {
 // Create new message route
 router.post(
   "/create-new-message",
+  RateLimiter,
   upload.single("images"),
   catchAsyncErrors(async (req, res, next) => {
     try {

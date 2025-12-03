@@ -52,7 +52,8 @@ import {
   ShopBulkOrders,
   ShopAcceptedBulkOrders,
   FinalBulkOrder,
-  ShopProfileCompletion
+  ShopProfileCompletion,
+  SellerPreviewPage,
 } from "./routes/ShopRoutes";
 
 import {
@@ -105,9 +106,13 @@ import UserWorkshopView from "./components/workshop/userworkshops";
 import AdminWholesaleMarketsPage from "./pages/AdminWholsesaleMarketsPage";
 import SalesAnalysis from "./components/Analysis/SalesAnalysis";
 
+
 import Explore from "./components/Route/ExploreUs/explore";
 import ForgotPassword from "./components/Password/ForgotPassword";
 import ResetPassword from "./components/Password/ResetPassword";
+import AdminSupplierForm from "./components/Wholesale/adminSupplierForm";
+import AdminSuppliers from "./components/Wholesale/adminSupplier";
+
 
 const App = () => {
   const [stripeApikey, setStripeApiKey] = useState("");
@@ -170,6 +175,7 @@ const App = () => {
           path="/seller/activation/:activation_token"
           element={<SellerActivationPage />}
         />
+        <Route path="/seller/:id" element={<SellerPreviewPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/Workshops" element={<UserWorkshopView/>} />
         <Route path="/servicess" element={<AllServicesPage />} />
@@ -307,7 +313,9 @@ element={
           path="/wholesale-markets"
           element={<ViewWholesaleMarkets />}
         />
-
+         <Route path="/admin/suppliers" element={<AdminSuppliers />} />
+<Route path="/admin/suppliers/create" element={<AdminSupplierForm />} />
+<Route path="/admin/suppliers/edit/:id" element={<AdminSupplierForm />} />
         <Route path="/admin" element={<AdminDashboardMain />} />
         <Route path="/admin-wholesale-markets" element={<AdminWholesaleMarketsPage />} />
         <Route path="/admin-wholesale-markets/create" element={<WholesaleMarketForm />} />

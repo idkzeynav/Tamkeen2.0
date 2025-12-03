@@ -9,6 +9,8 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
 const session = require('express-session');
+const adminSupplier = require("./controller/adminSupplier");
+const supplierController = require("./controller/supplierController");
 
 // config
 if (process.env.NODE_ENV !== "PRODUCTION") {
@@ -115,6 +117,8 @@ app.use("/api/v2/workshop", Workshop);
 app.use("/api/v2/map", maps);
 app.use("/api/v2/sales-analysis", salesAnalysis);
 app.use("/api/v2/service-categories", ServiceCategory);
+app.use("/api/v2/admin-supplier", adminSupplier);
+app.use("/api/v2/suppliers", supplierController);
 
 // Error handler
 app.use(ErrorHandler);

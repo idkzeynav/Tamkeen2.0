@@ -7,6 +7,7 @@ import L from 'leaflet';
 import Header from '../Layout/Header';
 import Footer from '../Layout/Footer';
 import Loader from '../Layout/Loader';
+import { server } from '../../server';
 
 const modalStyle = {
   zIndex: 1000,
@@ -43,20 +44,34 @@ const RegionAreaAnalysisDashboard = () => {
   const [modalLocation, setModalLocation] = useState(null);
 
   const COLORS = ['#5a4336', '#a67d6d', '#c8a4a5', '#d8c4b8', '#8B6B5D', '#9F8178', '#BFA39F', '#E0D1C9'];
-  
-  // Memoize filtered data
+
+  // Memoized filtered data
   const filteredData = useMemo(() => {
     let filtered = salesData;
+    
     if (selectedCategory !== 'All') {
-      filtered = filtered.filter(item => item.category === selectedCategory);
+      filtered = filtered.filter(item => {
+        if (!item.category) return false;
+        
+        // Normalize both the item category and selected category for comparison
+        const itemCategory = item.category.trim().toLowerCase();
+        const selectedCategoryNormalized = selectedCategory.trim().toLowerCase();
+        
+        return itemCategory === selectedCategoryNormalized;
+      });
     }
+    
     if (selectedRegion !== 'All') {
-      filtered = filtered.filter(item => item.region === selectedRegion);
+      filtered = filtered.filter(item => {
+        if (!item.region) return false;
+        return item.region.trim() === selectedRegion.trim();
+      });
     }
+    
     return filtered;
   }, [salesData, selectedCategory, selectedRegion]);
 
-  // Memoize geocoding function
+  // Memoized geocoding function
   const geocodeArea = useCallback(async (areaName, regionName) => {
     try {
       const query = areaName 
@@ -108,19 +123,57 @@ const RegionAreaAnalysisDashboard = () => {
     }
   }, []);
 
-  // Fetch main data
+  // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:8000/api/v2/sales-analysis/category-region-analysis');
+        const response = await axios.get(`${server}/sales-analysis/category-region-analysis`);
         const processedData = await processRawData(response.data.salesAnalysis);
         setSalesData(processedData);
         
-        const uniqueCategories = [...new Set(processedData.map(item => item.category))];
+        // Create a mapping for common spelling variations
+        const categoryMappings = {
+          'accesories': 'Accessories',
+          'accessories': 'Accessories',
+          'arts and crafts': 'Arts And Crafts',
+          'cloths': 'Cloths',
+          'cosmetics and body care': 'Cosmetics And Body Care',
+          'home & living': 'Home & Living',
+          'kitchen & dining': 'Kitchen & Dining',
+          'shoes': 'Shoes',
+          'toys & baby products': 'Toys & Baby Products'
+        };
+        
+        // Normalize categories with spelling correction
+        const categorySet = new Set();
+        processedData.forEach(item => {
+          if (item.category && typeof item.category === 'string') {
+            const normalized = item.category.trim().toLowerCase();
+            if (normalized) {
+              // Use mapping if available, otherwise convert to proper case
+              const correctedCategory = categoryMappings[normalized] || 
+                normalized.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+              categorySet.add(correctedCategory);
+            }
+          }
+        });
+        
+        const uniqueCategories = Array.from(categorySet).sort();
         setCategories(['All', ...uniqueCategories]);
         
-        const uniqueRegions = [...new Set(processedData.map(item => item.region))];
+        // Apply same logic for regions
+        const regionSet = new Set();
+        processedData.forEach(item => {
+          if (item.region && typeof item.region === 'string') {
+            const normalized = item.region.trim();
+            if (normalized) {
+              regionSet.add(normalized);
+            }
+          }
+        });
+        
+        const uniqueRegions = Array.from(regionSet).sort();
         setRegions(['All', ...uniqueRegions]);
         
         setLoading(false);
@@ -130,10 +183,45 @@ const RegionAreaAnalysisDashboard = () => {
         const sampleData = generateSampleData();
         setSalesData(sampleData);
         
-        const uniqueCategories = [...new Set(sampleData.map(item => item.category))];
+        // Apply same normalization to sample data
+        const categoryMappings = {
+          'accesories': 'Accessories',
+          'accessories': 'Accessories',
+          'arts and crafts': 'Arts And Crafts',
+          'cloths': 'Cloths',
+          'cosmetics and body care': 'Cosmetics And Body Care',
+          'home & living': 'Home & Living',
+          'kitchen & dining': 'Kitchen & Dining',
+          'shoes': 'Shoes',
+          'toys & baby products': 'Toys & Baby Products'
+        };
+        
+        const categorySet = new Set();
+        sampleData.forEach(item => {
+          if (item.category && typeof item.category === 'string') {
+            const normalized = item.category.trim().toLowerCase();
+            if (normalized) {
+              const correctedCategory = categoryMappings[normalized] || 
+                normalized.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+              categorySet.add(correctedCategory);
+            }
+          }
+        });
+        
+        const uniqueCategories = Array.from(categorySet).sort();
         setCategories(['All', ...uniqueCategories]);
         
-        const uniqueRegions = [...new Set(sampleData.map(item => item.region))];
+        const regionSet = new Set();
+        sampleData.forEach(item => {
+          if (item.region && typeof item.region === 'string') {
+            const normalized = item.region.trim();
+            if (normalized) {
+              regionSet.add(normalized);
+            }
+          }
+        });
+        
+        const uniqueRegions = Array.from(regionSet).sort();
         setRegions(['All', ...uniqueRegions]);
         
         setLoading(false);
@@ -143,7 +231,7 @@ const RegionAreaAnalysisDashboard = () => {
     fetchData();
   }, []);
 
-  // Optimized shop locations fetch
+  // Fetch shop locations when filters change
   useEffect(() => {
     const controller = new AbortController();
     const fetchShopLocations = async () => {
@@ -218,14 +306,14 @@ const RegionAreaAnalysisDashboard = () => {
     return () => controller.abort();
   }, [filteredData, selectedCategory, selectedRegion, geocodeArea]);
 
-  // Memoize area data calculations
+  // Calculate area data when filters change
   useEffect(() => {
     if (filteredData.length > 0) {
       if (selectedRegion === 'All') {
         const regionSummary = regions
           .filter(r => r !== 'All')
           .map(region => {
-            const regionData = filteredData.filter(item => item.region === region); // Use filteredData
+            const regionData = filteredData.filter(item => item.region === region);
             const totalSales = regionData.reduce((sum, item) => sum + item.totalSales, 0);
             return { name: region, value: totalSales };
           })
@@ -247,7 +335,7 @@ const RegionAreaAnalysisDashboard = () => {
         setAreaData(regionAreas);
       }
     }
-  }, [selectedRegion, salesData, regions]);
+  }, [selectedRegion, salesData, regions, filteredData]);
 
   // Memoize region comparison data
   const regionComparisonData = useMemo(() => 
@@ -267,6 +355,128 @@ const RegionAreaAnalysisDashboard = () => {
       .sort((a, b) => b.totalSales - a.totalSales),
     [filteredData, regions]
   );
+
+  // Helper function to generate sample data
+  const generateSampleData = () => {
+    const regions = ['Islamabad', 'Lahore', 'Karachi', 'Peshawar', 'Quetta'];
+    const areas = {
+      'Islamabad': ['Blue Area', 'F-7', 'F-10', 'I-8'],
+      'Lahore': ['DHA', 'Gulberg', 'Johar Town', 'Model Town'],
+      'Karachi': ['Clifton', 'Defence', 'Gulshan', 'Saddar'],
+      'Peshawar': ['Hayatabad', 'University Town', 'Saddar', 'Cantonment'],
+      'Quetta': ['Jinnah Road', 'Satellite Town', 'Chiltan Housing', 'Airport Road']
+    };
+    const categories = ['Electronics', 'Fashion', 'Home & Kitchen', 'Beauty & Personal Care', 'Sports & Fitness'];
+    
+    const data = [];
+    
+    regions.forEach(region => {
+      areas[region].forEach(area => {
+        categories.forEach(category => {
+          const totalSales = Math.floor(Math.random() * 500000) + 100000;
+          const totalQuantity = Math.floor(Math.random() * 500) + 100;
+          
+          data.push({
+            region,
+            area,
+            category,
+            totalSales,
+            totalQuantity
+          });
+        });
+      });
+    });
+    
+    return data;
+  };
+
+  // Process raw data from API
+  const processRawData = async (rawData) => {
+    // For each unique region+area combination, try to get geocoding information
+    const processedData = [...rawData];
+    
+    // Get all unique region+area combinations for later geocoding
+    const uniqueCombinations = new Set();
+    processedData.forEach(item => {
+      if (item.region && item.area) {
+        uniqueCombinations.add(`${item.region}-${item.area}`);
+      }
+    });
+    
+    return processedData;
+  };
+
+  // Handle area click on charts
+  const handleAreaClick = useCallback(async (areaName, regionName) => {
+    const existsInData = filteredData.some(d => {
+      const areaMatch = areaName ? d.area?.trim() === areaName.trim() : true;
+      const regionMatch = d.region?.trim() === regionName.trim();
+      return areaMatch && regionMatch;
+    });
+
+    if (!existsInData) {
+      console.warn(`No data found for area: ${areaName}, region: ${regionName}`);
+      return;
+    }
+
+    // First check if we already have this location
+    const existingLocation = shopLocations.find(
+      loc => {
+        const areaMatch = areaName ? loc.area?.trim() === areaName.trim() : loc.area === 'Regional Total';
+        const regionMatch = loc.region?.trim() === regionName.trim();
+        return areaMatch && regionMatch;
+      }
+    );
+    
+    if (existingLocation) {
+      setModalLocation(existingLocation);
+      setShowMapModal(true);
+      return;
+    }
+    
+    // Otherwise geocode the location
+    try {
+      const geoInfo = await geocodeArea(areaName, regionName);
+      
+      // More robust sales calculation
+      let totalSales = 0;
+      if (areaName) {
+        // Calculate for specific area in region
+        totalSales = filteredData
+          .filter(item => 
+            item.area?.trim() === areaName.trim() && 
+            item.region?.trim() === regionName.trim()
+          )
+          .reduce((sum, item) => sum + (item.totalSales || 0), 0);
+      } else {
+        // Calculate for entire region
+        totalSales = filteredData
+          .filter(item => item.region?.trim() === regionName.trim())
+          .reduce((sum, item) => sum + (item.totalSales || 0), 0);
+      }
+      
+      if (geoInfo && totalSales > 0) {
+        const newLocation = {
+          name: areaName ? `${areaName}, ${regionName}` : regionName,
+          area: areaName || 'Regional Total',
+          region: regionName,
+          lat: geoInfo.lat,
+          lon: geoInfo.lon,
+          totalSales: totalSales
+        };
+        
+        setModalLocation(newLocation);
+        setShowMapModal(true);
+        
+        // Also add to our locations for later use
+        setShopLocations(prev => [...prev, newLocation]);
+      } else {
+        console.error("Could not geocode location or no sales data:", areaName, regionName, "Sales:", totalSales);
+      }
+    } catch (error) {
+      console.error("Error in handleAreaClick:", error);
+    }
+  }, [shopLocations, geocodeArea, filteredData]);
 
   // Get the best area within each region for recommendations
   const getBestAreaRecommendation = () => {
@@ -306,105 +516,6 @@ const RegionAreaAnalysisDashboard = () => {
       return `${bestArea} area in ${selectedRegion} has the highest sales (Rs${bestAreaSales.toLocaleString()})`;
     }
   };
-
-  // Helper function to generate sample data - ensures areas are included
-  function generateSampleData() {
-    const regions = ['Islamabad', 'Lahore', 'Karachi', 'Peshawar', 'Quetta'];
-    const areas = {
-      'Islamabad': ['Blue Area', 'F-7', 'F-10', 'I-8'],
-      'Lahore': ['DHA', 'Gulberg', 'Johar Town', 'Model Town'],
-      'Karachi': ['Clifton', 'Defence', 'Gulshan', 'Saddar'],
-      'Peshawar': ['Hayatabad', 'University Town', 'Saddar', 'Cantonment'],
-      'Quetta': ['Jinnah Road', 'Satellite Town', 'Chiltan Housing', 'Airport Road']
-    };
-    const categories = ['Electronics', 'Fashion', 'Home & Kitchen', 'Beauty & Personal Care', 'Sports & Fitness'];
-    
-    const data = [];
-    
-    regions.forEach(region => {
-      areas[region].forEach(area => {
-        categories.forEach(category => {
-          const totalSales = Math.floor(Math.random() * 500000) + 100000;
-          const totalQuantity = Math.floor(Math.random() * 500) + 100;
-          
-          data.push({
-            region,
-            area,
-            category,
-            totalSales,
-            totalQuantity
-          });
-        });
-      });
-    });
-    
-    return data;
-  }
-
-  // Process raw data from API to ensure area information is properly included
-  async function processRawData(rawData) {
-    // For each unique region+area combination, try to get geocoding information
-    const processedData = [...rawData];
-    
-    // Get all unique region+area combinations for later geocoding
-    const uniqueCombinations = new Set();
-    processedData.forEach(item => {
-      if (item.region && item.area) {
-        uniqueCombinations.add(`${item.region}-${item.area}`);
-      }
-    });
-    
-    return processedData;
-  }
-  
-  // Handle click on chart item to open map modal
- const handleAreaClick = useCallback(async (areaName, regionName) => {
-  // Check if location exists in FILTERED data
-  const existsInData = areaName 
-    ? filteredData.some(d => d.area === areaName && d.region === regionName)
-    : filteredData.some(d => d.region === regionName);
-
-  if (!existsInData) return;
-  // First check if we already have this location
-  const existingLocation = shopLocations.find(
-    loc => loc.area === areaName && loc.region === regionName
-  );
-    if (existingLocation) {
-      // Set the location for the modal
-      setModalLocation(existingLocation);
-      setShowMapModal(true);
-      return;
-    }
-    
-    // Otherwise geocode the location
-    const geoInfo = await geocodeArea(areaName, regionName);
-    const totalSales = areaName
-    ? salesData.filter(item => item.area === areaName && item.region === regionName)
-              .reduce((sum, item) => sum + item.totalSales, 0)
-    : salesData.filter(item => item.region === regionName)
-              .reduce((sum, item) => sum + item.totalSales, 0);
-    
-    if (geoInfo) {
-      // Update the totalSales calculation in handleAreaClick
-      const newLocation = {
-        name: areaName ? `${areaName}, ${regionName}` : regionName,
-        area: areaName || 'Regional Total',
-        region: regionName,
-        lat: geoInfo.lat,
-        lon: geoInfo.lon,
-        totalSales: totalSales
-};
-      
-      // Set the location for the modal
-      setModalLocation(newLocation);
-      setShowMapModal(true);
-      
-      // Also add to our locations for later use
-      setShopLocations(prev => [...prev, newLocation]);
-    } else {
-      console.error("Could not geocode location:", areaName, regionName);
-    }
-}, [shopLocations, geocodeArea, filteredData]);
 
   // Custom rendering for pie chart with click handler
   const renderActiveShape = (props) => {
@@ -457,17 +568,16 @@ const RegionAreaAnalysisDashboard = () => {
     return null;
   };
 
-  // Get max sales for heatmap scaling - ensure a default value if no data available
+  // Get max sales for heatmap scaling
   const maxSales = useMemo(() => 
     shopLocations.length > 0 
       ? Math.max(...shopLocations.map(loc => loc.totalSales || 0))
       : 500000,
-    [shopLocations] // Recaluclate when shopLocations change
+    [shopLocations]
   );
 
   if (loading) {
-        return <Loader />;
-
+    return <Loader />;
   }
 
   // Map modal component
@@ -475,16 +585,13 @@ const RegionAreaAnalysisDashboard = () => {
     if (!location) return null;
     
     return (
-
-       
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-      
-      style={modalStyle}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" style={modalStyle}>
         <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-hidden flex flex-col">
           <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: '#d8c4b8' }}>
             <h3 className="text-xl font-bold" style={{ color: '#5a4336' }}>{location.name}</h3>
             <button 
               onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -501,7 +608,7 @@ const RegionAreaAnalysisDashboard = () => {
               <div className="bg-gray-50 p-4 rounded-lg" style={{ backgroundColor: '#f8f5f2' }}>
                 <h4 className="font-semibold mb-2" style={{ color: '#5a4336' }}>Area</h4>
                 <p>{location.area || 'Regional Overview'}</p>
-                </div>
+              </div>
               <div className="bg-gray-50 p-4 rounded-lg" style={{ backgroundColor: '#f8f5f2' }}>
                 <h4 className="font-semibold mb-2" style={{ color: '#5a4336' }}>Total Sales</h4>
                 <p className="font-medium">Rs{location.totalSales.toLocaleString()}</p>
@@ -645,7 +752,7 @@ const RegionAreaAnalysisDashboard = () => {
         <div className="flex items-center">
           <label className="font-medium mr-2" style={{ color: '#5a4336' }}>Region:</label>
           <select 
-            className="bborder rounded p-2 bg-white focus:ring-2 focus:ring-[#c8a4a5] focus:border-[#c8a4a5] outline-none transition-all"
+            className="border rounded p-2 bg-white focus:ring-2 focus:ring-[#c8a4a5] focus:border-[#c8a4a5] outline-none transition-all"
             style={{ borderColor: '#d8c4b8' }}
             value={selectedRegion}
             onChange={(e) => setSelectedRegion(e.target.value)}
@@ -709,31 +816,31 @@ const RegionAreaAnalysisDashboard = () => {
             <p className="mt-2" style={{ color: '#5a4336' }}>
               Opening a new shop in this area would likely yield the best results based on historical sales data.
             </p>
-<button 
-  className="mt-2 px-4 py-2 rounded-lg transition-colors"
-  style={{ 
-    backgroundColor: '#c8a4a5',
-    backgroundImage: 'linear-gradient(to right, #c8a4a5, #8c6c6b)',
-    color: 'white'
-  }}
- // In the DashboardContent component's button onClick handler:
- onClick={() => {
-              const bestLocation = areaData[0];
-              if (bestLocation) {
-                const targetRegion = selectedRegion === 'All' ? bestLocation.name : selectedRegion;
-                const targetArea = selectedRegion === 'All' ? null : bestLocation.name;
-                handleAreaClick(targetArea, targetRegion);
-              }
-            }}
->
-  View on Map
-</button>
+            <button 
+              className="mt-2 px-4 py-2 rounded-lg transition-colors"
+              style={{ 
+                backgroundColor: '#c8a4a5',
+                backgroundImage: 'linear-gradient(to right, #c8a4a5, #8c6c6b)',
+                color: 'white'
+              }}
+              onClick={() => {
+                const bestLocation = areaData[0];
+                if (bestLocation) {
+                  handleAreaClick(
+                    selectedRegion === 'All' ? null : bestLocation.name,
+                    selectedRegion === 'All' ? bestLocation.name : selectedRegion
+                  );
+                }
+              }}
+            >
+              View on Map
+            </button>
           </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="p-4 rounded-lg shadow-sm bg-white">
-          <h3 className="text-lg font-semibold mb-4" style={{ color: '#5a4336' }}>Region Comparison</h3>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#5a4336' }}>Region Comparison</h3>
             <div style={{ height: '300px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -745,7 +852,7 @@ const RegionAreaAnalysisDashboard = () => {
                   <YAxis style={{ fill: '#5a4336' }} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#f8f5f2', borderColor: '#d8c4b8' }}
-                    formatter={(value) => [`RS${value.toLocaleString()}`, 'Total Sales']}
+                    formatter={(value) => [`Rs${value.toLocaleString()}`, 'Total Sales']}
                   />
                   <Legend />
                   <Bar 
@@ -783,6 +890,7 @@ const RegionAreaAnalysisDashboard = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
+                 
                   <Tooltip 
                     formatter={(value) => [`Rs${value.toLocaleString()}`, 'Total Sales']}
                     contentStyle={{ backgroundColor: '#f8f5f2', borderColor: '#d8c4b8' }}

@@ -40,16 +40,16 @@ const ProductCard = ({ data, isEvent }) => {
     toast.success("Item added to cart successfully!");
   };
 
-  // Helper function to get the correct image URL
+  // Function to get the correct image URL
   const getImageUrl = (imagePath) => {
-    if (!imagePath) return '';
+    if (!imagePath) return 'https://via.placeholder.com/400x400';
     
-    // If the image path is already a full URL, use it as is
+    // Check if it's already a full URL (starts with http or https)
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
     
-    // If it's a relative path, construct the full URL
+    // Otherwise, it's a local image path, so prepend backend_url
     return `${backend_url}${imagePath}`;
   };
 

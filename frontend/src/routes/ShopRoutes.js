@@ -14,6 +14,8 @@ import ShopBookings from "../pages/Shop/ShopBookings";
 import ShopBulkOrders from "../pages/Shop/ShopAllbulkorders";
 import ShopAcceptedBulkOrders from "../pages/Shop/ShopAcceptedorders";
 import FinalBulkOrder from "../components/Shop/Acceptedbulkorder";
+
+import SellerPreviewPage from "../pages/Shop/SellerPreviewPage";
 export {
   ShopDashboardPage,
   ShopCreateProduct,
@@ -27,8 +29,7 @@ export {
   ShopInboxPage,
   ShopBookings,
   ShopBulkOrders,
-ShopAcceptedBulkOrders,
-FinalBulkOrder
-  
-  
+  ShopAcceptedBulkOrders,
+  FinalBulkOrder,
+  SellerPreviewPage,
 };

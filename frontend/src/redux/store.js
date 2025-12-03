@@ -10,6 +10,10 @@ import { bookingReducer } from "./reducers/bookingReducer";
 import { bulkOrderReducer } from "./reducers/bulkOrderReducer";
 import { wholesaleMarketReducer } from "./reducers/wholesaleMarketReducer";
 import { serviceCategoryReducer } from "./reducers/serviceCategory";
+import { supplierReducer } from "./reducers/supplier";
+
+
+   
 const Store = configureStore({
   reducer: {
     // Reducers
@@ -24,6 +28,7 @@ const Store = configureStore({
      bulkOrderReducer:bulkOrderReducer,
      wholesaleMarket: wholesaleMarketReducer,
      serviceCategoryReducer:serviceCategoryReducer,
+    supplier: supplierReducer,
    
   },
 });

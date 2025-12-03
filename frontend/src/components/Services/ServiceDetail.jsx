@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import { 
   AiOutlineClockCircle, AiOutlineEnvironment, AiOutlinePhone, 
   AiOutlineCalendar, AiOutlineUnorderedList, AiOutlineShop, 
-  AiOutlineCheckCircle, AiOutlineReload, AiOutlineInfoCircle
+  AiOutlineCheckCircle, AiOutlineReload, AiOutlineInfoCircle,
+  AiOutlineUp, AiOutlineDown
 } from "react-icons/ai";
 import Header from '../Layout/Header';
 import Footer from '../Layout/Footer';
@@ -316,41 +317,9 @@ const ServiceDetailPage = () => {
             <div className="bg-gradient-to-r from-[#d8c4b8] to-[#c8a4a5] p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-white mb-2">{service.name}</h1>
+                  <h1 className="text-3xl font-bold text-white mb-4">{service.name}</h1>
                   
-                  {/* Condensed Description with Show More/Less */}
-                  <div className="text-white/90 mb-3 bg-black/10 backdrop-blur-sm rounded-lg p-3">
-                    <h3 className="text-white font-bold mb-2 text-lg">Service Description</h3>
-                    {showFullDescription ? (
-                      <>
-                        {descriptionPoints.map((point, index) => (
-                          <p key={index} className="mb-1 font-medium">• {point}</p>
-                        ))}
-                        <button 
-                          onClick={() => setShowFullDescription(false)}
-                          className="mt-2 text-white/80 hover:text-white underline text-sm"
-                        >
-                          Show Less
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {shortDescription.map((point, index) => (
-                          <p key={index} className="mb-1 font-medium">• {point}</p>
-                        ))}
-                        {descriptionPoints.length > 3 && (
-                          <button 
-                            onClick={() => setShowFullDescription(true)}
-                            className="mt-2 text-white/80 hover:text-white underline text-sm"
-                          >
-                            Show More ({descriptionPoints.length - 2} more points)
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-4 mt-3">
+                  <div className="flex flex-wrap gap-4 mb-6">
                     <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center">
                       <AiOutlineEnvironment className="text-white mr-2 text-lg" />
                       <span className="text-white text-sm">{service.location || 'Location not specified'}</span>
@@ -366,6 +335,95 @@ const ServiceDetailPage = () => {
                       <span className="text-white text-sm">{service.shop.name}</span>
                     </Link>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Prominent Service Description Section */}
+            <div className="bg-white border-b border-gray-200">
+              <div className="max-w-6xl mx-auto px-6 py-8">
+                <div className="flex items-center mb-4">
+                  <AiOutlineInfoCircle className="text-[#5a4336] mr-3 text-2xl" />
+                  <h2 className="text-2xl font-bold text-[#5a4336]">Service Description</h2>
+                </div>
+                
+                <div className="bg-gradient-to-r from-[#f8f4f1] to-[#f0e6e6] rounded-xl p-6 shadow-sm">
+                  {showFullDescription ? (
+                    <div className="space-y-3">
+                      {descriptionPoints.map((point, index) => {
+                        // Check if this line looks like a heading (all caps, short, etc.)
+                        const isHeading = point.length < 50 && (
+                          point === point.toUpperCase() || 
+                          point.includes(':') || 
+                          point.startsWith('*') ||
+                          !point.includes(' ')
+                        );
+                        
+                        return (
+                          <div key={index} className={isHeading ? "mb-4 mt-6 first:mt-0" : "mb-2"}>
+                            {isHeading ? (
+                              <h3 className="text-lg font-bold text-[#5a4336] border-b-2 border-[#d8c4b8] pb-2 mb-3">
+                                {point.replace(/[*:]/g, '').trim()}
+                              </h3>
+                            ) : (
+                              <div className="flex items-start">
+                                <span className="text-[#a67d6d] mr-3 mt-1 text-lg">•</span>
+                                <p className="text-[#5a4336] text-base leading-relaxed font-medium">
+                                  {point.trim()}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      <button 
+                        onClick={() => setShowFullDescription(false)}
+                        className="mt-6 bg-[#a67d6d] hover:bg-[#5a4336] text-white px-4 py-2 rounded-lg text-sm font-medium transition duration-300 flex items-center"
+                      >
+                        Show Less <AiOutlineUp className="ml-2" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {shortDescription.map((point, index) => {
+                        const isHeading = point.length < 50 && (
+                          point === point.toUpperCase() || 
+                          point.includes(':') || 
+                          point.startsWith('*') ||
+                          !point.includes(' ')
+                        );
+                        
+                        return (
+                          <div key={index} className={isHeading ? "mb-4 mt-6 first:mt-0" : "mb-2"}>
+                            {isHeading ? (
+                              <h3 className="text-lg font-bold text-[#5a4336] border-b-2 border-[#d8c4b8] pb-2 mb-3">
+                                {point.replace(/[*:]/g, '').trim()}
+                              </h3>
+                            ) : (
+                              <div className="flex items-start">
+                                <span className="text-[#a67d6d] mr-3 mt-1 text-lg">•</span>
+                                <p className="text-[#5a4336] text-base leading-relaxed font-medium">
+                                  {point.trim()}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      
+                      {descriptionPoints.length > 3 && (
+                        <div className="mt-6 pt-4 border-t border-[#e6d8d8]">
+                          <button 
+                            onClick={() => setShowFullDescription(true)}
+                            className="bg-[#5a4336] hover:bg-[#a67d6d] text-white px-6 py-3 rounded-lg text-sm font-medium transition duration-300 flex items-center shadow-md"
+                          >
+                            Show Full Description ({descriptionPoints.length - 2} more sections)
+                            <AiOutlineDown className="ml-2" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

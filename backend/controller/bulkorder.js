@@ -205,11 +205,11 @@ router.get("/get-orders/:shopId", catchAsyncErrors(async (req, res, next) => {
       terms: rfq.terms,
       status: rfq.status,
       pricePerUnit: rfq.pricePerUnit,
-deliveryTime: rfq.deliveryTime,
-warranty: rfq.warranty,
-availableQuantity:rfq.availableQuantity,
-expirationDate:rfq.expirationDate,
-packagingDetails:rfq.packagingDetails
+      deliveryTime: rfq.deliveryTime,
+      warranty: rfq.warranty,
+      availableQuantity:rfq.availableQuantity,
+      expirationDate:rfq.expirationDate,
+      packagingDetails:rfq.packagingDetails
     }
   }));
 

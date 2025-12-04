@@ -8,7 +8,7 @@
 ![Dashboard Screenshot](https://github.com/idkzeynav/Tamkeen2.0/blob/main/frontend/src/Assests/animations/TamkeenCertificationView.png)
 ![Dashboard Screenshot](https://github.com/idkzeynav/Tamkeen2.0/blob/main/frontend/src/Assests/animations/TamkeenOrderPlacedViewSeller.png)
 ![Dashboard Screenshot](https://github.com/idkzeynav/Tamkeen2.0/blob/main/frontend/src/Assests/animations/TamkeenGIS_View.png)
-![Dashboard Screenshot](https://github.com/idkzeynav/Tamkeen2.0/blob/main/frontend/src/Assests/animations/TamkeenWorkshopTabletView.png)
 ![Dashboard Screenshot](https://github.com/idkzeynav/Tamkeen2.0/blob/main/frontend/src/Assests/animations/TamkeenMessageOriginalVIew.png)
 ![Dashboard Screenshot](https://github.com/idkzeynav/Tamkeen2.0/blob/main/frontend/src/Assests/animations/TamkeenMessageTranslatedView.png)
+
 

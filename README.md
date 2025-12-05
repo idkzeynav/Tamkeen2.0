@@ -189,9 +189,6 @@ Open your browser and navigate to `http://localhost:3000`
 
 ## 📸 Screenshots
 
-<details>
-<summary>Click to view application screenshots</summary>
-
 ### Homepage
 ![Homepage](frontend/src/Assests/animations/TamkeenHomePage.png)
 
@@ -221,8 +218,6 @@ Open your browser and navigate to `http://localhost:3000`
 
 ### Messaging - Translated
 ![Messages Translated](frontend/src/Assests/animations/TamkeenMessageTranslatedView.png)
-
-</details>
 
 ---
 
@@ -301,4 +296,5 @@ For questions, suggestions, or support:
 ⭐ If you find this project useful, please consider giving it a star!
 
 </div>
+
 
